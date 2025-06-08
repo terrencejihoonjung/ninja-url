@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
-import { createShortUrl } from "@/lib/db/queries";
+import { createShortUrl } from "@/lib/supabase/queries";
 
 // POST /urls -> creates a short URL using a long URL and saves it to the database
 export async function POST(request: NextRequest) {

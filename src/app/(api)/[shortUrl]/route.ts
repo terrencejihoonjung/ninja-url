@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/db/supabase-server";
-import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/supabase-server";
 
 // GET /{shortUrl} -> redirects to the long URL
 export async function GET(
@@ -13,14 +12,37 @@ export async function GET(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("url")
-    .select("long_url")
+    .select("long_url, visits")
     .eq("short_url", shortUrl)
-    .single();
+    .limit(1) // limits the 1 result
+    .maybeSingle(); // returns null or the single result as an object
 
   if (error || !data) {
+    console.error("Retrieving URL error:", error);
     return NextResponse.json({ error: "Short URL not found" }, { status: 404 });
   }
 
-  // Redirect to the long URL
-  redirect(data.long_url);
+  // Incremenet the visits field
+  const { error: updateError } = await supabase
+    .from("url")
+    .update({ visits: data.visits + 1 })
+    .eq("short_url", shortUrl);
+
+  if (updateError) {
+    console.error("Updating visits error:", updateError);
+    return NextResponse.json(
+      { error: "Failed to update visits" },
+      { status: 500 }
+    );
+  }
+
+  // Use NextResponse.redirect with explicit cache control for analytics
+  return NextResponse.redirect(data.long_url, {
+    status: 307, // Temporary redirect (same as redirect() default)
+    headers: {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 }

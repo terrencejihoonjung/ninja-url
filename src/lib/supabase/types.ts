@@ -15,18 +15,21 @@ export type Database = {
           id: number
           long_url: string
           short_url: string
+          visits: number
         }
         Insert: {
           created_at?: string
           id?: number
           long_url?: string
           short_url: string
+          visits?: number
         }
         Update: {
           created_at?: string
           id?: number
           long_url?: string
           short_url?: string
+          visits?: number
         }
         Relationships: []
       }
