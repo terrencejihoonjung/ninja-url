@@ -11,8 +11,6 @@ export async function login(
 ) {
   const supabase = await createClient();
 
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
   const data = {
     email: formData.get("email") as string,
     password: formData.get("password") as string,
@@ -28,7 +26,15 @@ export async function login(
     return { error: "An unexpected error occurred. Please try again." };
   }
 
+  // Check for URL parameter from hidden form field
+  const prefilledUrl = formData.get("url") as string;
+
   revalidatePath("/", "layout");
+
+  if (prefilledUrl) {
+    redirect(`/?url=${prefilledUrl}`);
+  }
+
   redirect("/");
 }
 

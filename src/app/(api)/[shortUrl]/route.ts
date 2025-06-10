@@ -10,38 +10,66 @@ export async function GET(
 
   // Look up the long URL in the database
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data: urlData, error: urlError } = await supabase
     .from("url")
-    .select("long_url, visits")
+    .select("long_url, id")
     .eq("short_url", shortUrl)
     .limit(1) // limits the 1 result
     .maybeSingle(); // returns null or the single result as an object
 
-  if (error || !data) {
-    console.error("Retrieving URL error:", error);
+  if (urlError || !urlData) {
+    console.error("Retrieving URL error:", urlError);
     return NextResponse.json({ error: "Short URL not found" }, { status: 404 });
   }
 
-  // Incremenet the visits field
-  const { error: updateError } = await supabase
-    .from("url")
-    .update({ visits: data.visits + 1 })
-    .eq("short_url", shortUrl);
+  // If there's an existing url_metric row belonging to the url_id + hourTimestamp, increment the visits field
+  const date = new Date();
+  date.setHours(date.getHours(), 0, 0, 0); // Floor to nearest hour by zeroing minutes, seconds and milliseconds
+  const hourTimestamp = date.toISOString();
 
-  if (updateError) {
-    console.error("Updating visits error:", updateError);
-    return NextResponse.json(
-      { error: "Failed to update visits" },
-      { status: 500 }
-    );
+  const { data: existingMetric } = await supabase
+    .from("url_metric")
+    .select("id, visits")
+    .eq("url_id", urlData.id)
+    .eq("datetime", hourTimestamp)
+    .limit(1)
+    .maybeSingle();
+
+  console.log("existingMetric", existingMetric);
+
+  if (existingMetric) {
+    const { error: updateError } = await supabase
+      .from("url_metric")
+      .update({ visits: existingMetric.visits + 1 })
+      .eq("id", existingMetric.id);
+
+    if (updateError) {
+      console.error("Updating url metric error:", updateError);
+      return NextResponse.json(
+        { error: "Failed to update url metric" },
+        { status: 500 }
+      );
+    }
+  } else {
+    const { error: insertError } = await supabase.from("url_metric").insert({
+      url_id: urlData.id,
+      visits: 1,
+      datetime: hourTimestamp,
+    });
+
+    if (insertError) {
+      console.error("Inserting url metric error:", insertError);
+      return NextResponse.json(
+        { error: "Failed to insert url metric" },
+        { status: 500 }
+      );
+    }
   }
 
   // Use NextResponse.redirect with explicit cache control for analytics
-  return NextResponse.redirect(data.long_url, {
+  return NextResponse.redirect(urlData.long_url, {
     status: 307, // Temporary redirect (same as redirect() default)
     headers: {
-      "Cache-Control": "no-cache, no-store, must-revalidate",
-      Pragma: "no-cache",
       Expires: "0",
     },
   });

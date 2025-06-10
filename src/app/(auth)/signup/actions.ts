@@ -36,7 +36,15 @@ export async function signup(
     return { error: "An unexpected error occurred. Please try again." };
   }
 
+  // Check for URL parameter from hidden form field
+  const prefilledUrl = formData.get("url") as string;
+
   revalidatePath("/", "layout");
+
+  if (prefilledUrl) {
+    redirect(`/?url=${prefilledUrl}`);
+  }
+
   redirect("/");
 }
 

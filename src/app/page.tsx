@@ -1,15 +1,22 @@
 import { createClient } from "@/lib/supabase/supabase-server";
-import { LandingPage } from "@/components/landing-page";
-import { Dashboard } from "@/components/dashboard/dashboard";
+import { LandingPage } from "@/components/landing-page/landing-page";
+import { redirect } from "next/navigation";
 
-export default async function Home() {
+interface HomeProps {
+  searchParams: Promise<{ url?: string }>;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const { url } = await searchParams;
+  const prefilledUrl = url ? decodeURIComponent(url) : undefined;
+
   if (user) {
-    return <Dashboard user={user} />;
+    redirect(prefilledUrl ? `/dashboard?url=${prefilledUrl}` : "/dashboard");
   }
 
   return <LandingPage />;

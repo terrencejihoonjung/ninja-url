@@ -15,23 +15,58 @@ export type Database = {
           id: number
           long_url: string
           short_url: string
-          visits: number
+          user_id: string
         }
         Insert: {
           created_at?: string
           id?: number
           long_url?: string
           short_url: string
-          visits?: number
+          user_id: string
         }
         Update: {
           created_at?: string
           id?: number
           long_url?: string
           short_url?: string
-          visits?: number
+          user_id?: string
         }
         Relationships: []
+      }
+      url_metric: {
+        Row: {
+          created_at: string
+          datetime: string
+          id: number
+          unique_visitors: number
+          url_id: number
+          visits: number
+        }
+        Insert: {
+          created_at?: string
+          datetime: string
+          id?: number
+          unique_visitors?: number
+          url_id: number
+          visits?: number
+        }
+        Update: {
+          created_at?: string
+          datetime?: string
+          id?: number
+          unique_visitors?: number
+          url_id?: number
+          visits?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "url_metric_url_id_fkey"
+            columns: ["url_id"]
+            isOneToOne: false
+            referencedRelation: "url"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

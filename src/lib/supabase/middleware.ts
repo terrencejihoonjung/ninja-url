@@ -51,7 +51,6 @@ export async function updateSession(request: NextRequest) {
       pathname === "/signup" || // Signup page
       pathname === "/error" || // Error page
       pathname === "/auth/callback" || // OAuth callback route
-      (pathname === "/urls" && request.method === "POST") || // URL shortening API (for anonymous users)
       /^\/[a-z0-9]{6}$/.test(pathname); // Short URLs (e.g., /abc123)
 
     if (!isPublicRoute) {

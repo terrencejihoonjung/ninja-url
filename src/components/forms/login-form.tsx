@@ -5,18 +5,24 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signup, signupWithGoogle } from "@/app/(auth)/signup/actions";
+import { login, loginWithGoogle } from "@/app/(auth)/login/actions";
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 
-export function SignupForm({
+export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const [state, formAction] = useActionState(signup, null);
+  const [state, formAction] = useActionState(login, null);
+  const searchParams = useSearchParams();
+  const prefilledUrl = searchParams.get("url");
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <form action={formAction}>
+        {prefilledUrl && (
+          <input type="hidden" name="url" value={prefilledUrl} />
+        )}
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2">
             <Link
@@ -27,11 +33,16 @@ export function SignupForm({
                 <span className="text-2xl">🥷</span>
               </div>
             </Link>
-            <h1 className="text-xl font-bold">Join ninja-url</h1>
+            <h1 className="text-xl font-bold">Welcome back to ninja-url</h1>
             <div className="text-center text-sm">
-              Already have an account?{" "}
-              <Link href="/login" className="underline underline-offset-4">
-                Sign in
+              Don&apos;t have an account?{" "}
+              <Link
+                href={`/signup${
+                  prefilledUrl ? `?url=${encodeURIComponent(prefilledUrl)}` : ""
+                }`}
+                className="underline underline-offset-4"
+              >
+                Sign up
               </Link>
             </div>
           </div>
@@ -54,11 +65,10 @@ export function SignupForm({
                 type="password"
                 placeholder="Enter your password"
                 required
-                minLength={6}
               />
             </div>
             <Button type="submit" className="w-full">
-              Create account
+              Sign in
             </Button>
 
             {state?.error && (
@@ -69,15 +79,13 @@ export function SignupForm({
           </div>
         </div>
       </form>
-
       <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
         <span className="bg-background text-muted-foreground relative z-10 px-2">
           Or
         </span>
       </div>
-
       <div className="grid gap-4">
-        <form action={signupWithGoogle}>
+        <form action={loginWithGoogle}>
           <Button variant="outline" type="submit" className="w-full">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -94,16 +102,9 @@ export function SignupForm({
         </form>
       </div>
 
-      <div className="text-muted-foreground text-center text-xs text-balance">
-        By creating an account, you agree to our{" "}
-        <a href="#" className="underline underline-offset-4 hover:text-primary">
-          Terms of Service
-        </a>{" "}
-        and{" "}
-        <a href="#" className="underline underline-offset-4 hover:text-primary">
-          Privacy Policy
-        </a>
-        .
+      <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
+        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
+        and <a href="#">Privacy Policy</a>.
       </div>
     </div>
   );
