@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { UserUrl } from "./dashboard";
+import { UserUrl } from "@/app/dashboard/layout";
 import { redirect } from "next/navigation";
 
 // Helper functions
@@ -35,10 +35,9 @@ export const UrlRow = ({ url, index }: { url: UserUrl; index: number }) => {
 
   return (
     <div
-      className="flex items-center justify-between p-4 bg-white/5 backdrop-blur rounded-lg border border-white/10 hover:bg-white/10 transition-all duration-300"
-      style={{
-        animation: index === 0 ? "slideInFromTop 0.5s ease-out" : undefined,
-      }}
+      className={`flex items-center justify-between p-4 bg-white/5 backdrop-blur rounded-lg border border-white/10 hover:bg-white/10 transition-all duration-300 ${
+        index === 0 ? "animate-in slide-in-from-top-5 fade-in duration-500" : ""
+      }`}
       onClick={handleClick}
     >
       <div className="flex-1 min-w-0 mr-4">

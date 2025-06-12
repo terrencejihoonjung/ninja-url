@@ -34,6 +34,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   const [userUrls, setUserUrls] = useState<UserUrl[]>([]);
+  const [isErrorFading, setIsErrorFading] = useState(false);
+  const [isWarningFading, setIsWarningFading] = useState(false);
 
   // Refs to store timeout IDs for cleanup
   const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -48,6 +50,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       if (warningTimeoutRef.current) {
         clearTimeout(warningTimeoutRef.current);
       }
+      // Reset animation states on unmount
+      setIsErrorFading(false);
+      setIsWarningFading(false);
     };
   }, []);
 
@@ -105,11 +110,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
 
     setError(message);
+    setIsErrorFading(false); // Ensure we start with fade-in
 
-    // Set new timeout
+    // Two-stage timeout: fade-out → clear
     errorTimeoutRef.current = setTimeout(() => {
-      setError("");
-    }, 5000);
+      setIsErrorFading(true); // Start fade-out animation
+      setTimeout(() => {
+        setError("");
+        setIsErrorFading(false); // Reset for next message
+      }, 300); // Wait for animation to complete
+    }, 4700); // 4.7s visible + 0.3s fade-out = 5s total
   };
 
   const setWarningWithTimeout = (message: string) => {
@@ -119,11 +129,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
 
     setWarning(message);
+    setIsWarningFading(false); // Ensure we start with fade-in
 
-    // Set new timeout
+    // Two-stage timeout: fade-out → clear
     warningTimeoutRef.current = setTimeout(() => {
-      setWarning("");
-    }, 5000);
+      setIsWarningFading(true); // Start fade-out animation
+      setTimeout(() => {
+        setWarning("");
+        setIsWarningFading(false); // Reset for next message
+      }, 300); // Wait for animation to complete
+    }, 4700); // 4.7s visible + 0.3s fade-out = 5s total
   };
 
   const handleShorten = async (e: React.FormEvent<HTMLButtonElement>) => {
@@ -246,7 +261,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               value={longUrl}
               onChange={(e) => {
                 setLongUrl(e.target.value);
-                if (error) setError("");
+                if (error) {
+                  setError("");
+                  setIsErrorFading(false); // Reset animation state
+                }
               }}
               className="h-full rounded-xl bg-background border-none"
             />
@@ -266,8 +284,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           {/* Error Message */}
-          {error && (
-            <div className="mb-6">
+          {(error || isErrorFading) && (
+            <div
+              className={`mb-6 transition-all duration-300 ease-out ${
+                isErrorFading
+                  ? "opacity-0 -translate-y-2"
+                  : "opacity-100 translate-y-0"
+              }`}
+            >
               <p className="text-red-400 text-sm bg-red-500/10 backdrop-blur rounded-lg p-3 border border-red-500/20">
                 {error}
               </p>
@@ -275,8 +299,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           )}
 
           {/* Warning Message */}
-          {warning && (
-            <div className="mb-6">
+          {(warning || isWarningFading) && (
+            <div
+              className={`mb-6 transition-all duration-300 ease-out ${
+                isWarningFading
+                  ? "opacity-0 -translate-y-2"
+                  : "opacity-100 translate-y-0"
+              }`}
+            >
               <p className="text-yellow-400 text-sm bg-yellow-500/10 backdrop-blur rounded-lg p-3 border border-yellow-500/20">
                 {warning}
               </p>
@@ -330,19 +360,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Right Panel - Content from children */}
         {children}
       </div>
-
-      <style jsx>{`
-        @keyframes slideInFromTop {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }
