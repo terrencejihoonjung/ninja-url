@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { UserUrl } from "@/app/dashboard/layout";
-import { redirect } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 // Helper functions
 const truncateUrl = (url: string, maxLength: number = 50): string => {
@@ -20,29 +21,31 @@ const getFullShortUrl = (shortUrl: string): string => {
 
 export const UrlRow = ({ url, index }: { url: UserUrl; index: number }) => {
   const [copied, setCopied] = useState(false);
+  const pathname = usePathname();
+  const targetUrl = `/dashboard/analytics/${url.id}`;
+  const isActive = pathname === targetUrl;
 
-  const handleCopy = async () => {
+  const handleCopy = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault(); // Prevent default button behavior
+    e.stopPropagation(); // Prevent Link navigation
     const fullUrl = getFullShortUrl(url.short_url);
     await navigator.clipboard.writeText(fullUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    redirect(`/dashboard/analytics/${url.id}`);
-  };
-
   return (
-    <div
-      className={`flex items-center justify-between p-4 bg-white/5 backdrop-blur rounded-lg border border-white/10 hover:bg-white/10 transition-all duration-300 ${
-        index === 0 ? "animate-in slide-in-from-top-5 fade-in duration-500" : ""
+    <Link
+      href={targetUrl}
+      className={`flex items-center justify-between p-4 bg-white/5 backdrop-blur rounded-lg border border-white/10 hover:bg-white/10 transition-all duration-500 ease-out ${
+        index === 0 ? "animate-in slide-in-from-top-2 fade-in" : ""
       }`}
-      onClick={handleClick}
     >
       <div className="flex-1 min-w-0 mr-4">
         <p
-          className="text-white hover:text-orange-400 transition-colors duration-200 text-sm font-medium block truncate"
+          className={`text-sm font-medium block truncate transition-colors duration-200 ${
+            isActive ? "text-orange-400" : "text-white hover:text-orange-400"
+          }`}
           title={url.long_url}
         >
           {truncateUrl(url.long_url)}
@@ -54,6 +57,7 @@ export const UrlRow = ({ url, index }: { url: UserUrl; index: number }) => {
       </div>
 
       <Button
+        type="button"
         onClick={handleCopy}
         variant="outline"
         size="sm"
@@ -89,6 +93,6 @@ export const UrlRow = ({ url, index }: { url: UserUrl; index: number }) => {
           </svg>
         )}
       </Button>
-    </div>
+    </Link>
   );
 };
