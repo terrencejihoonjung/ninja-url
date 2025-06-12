@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import type { User } from "@supabase/supabase-js";
 import { signOut } from "@/app/dashboard/actions";
@@ -34,6 +34,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   const [userUrls, setUserUrls] = useState<UserUrl[]>([]);
+
+  // Refs to store timeout IDs for cleanup
+  const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const warningTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+      if (warningTimeoutRef.current) {
+        clearTimeout(warningTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Get user on mount
   useEffect(() => {
@@ -82,6 +98,34 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   };
 
+  const setErrorWithTimeout = (message: string) => {
+    // Clear existing timeout
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+
+    setError(message);
+
+    // Set new timeout
+    errorTimeoutRef.current = setTimeout(() => {
+      setError("");
+    }, 5000);
+  };
+
+  const setWarningWithTimeout = (message: string) => {
+    // Clear existing timeout
+    if (warningTimeoutRef.current) {
+      clearTimeout(warningTimeoutRef.current);
+    }
+
+    setWarning(message);
+
+    // Set new timeout
+    warningTimeoutRef.current = setTimeout(() => {
+      setWarning("");
+    }, 5000);
+  };
+
   const handleShorten = async (e: React.FormEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setError("");
@@ -89,17 +133,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     // Validation
     if (!longUrl.trim()) {
-      setError("Please enter a URL");
+      setErrorWithTimeout("Please enter a URL");
       return;
     }
 
     if (!isValidUrl(longUrl)) {
-      setError("Please enter a valid URL (include http:// or https://)");
+      setErrorWithTimeout(
+        "Please enter a valid URL (include http:// or https://)"
+      );
       return;
     }
 
     if (userUrls.some((url) => url.long_url === longUrl)) {
-      setWarning("This URL has already been shortened");
+      setWarningWithTimeout("This URL has already been shortened");
       return;
     }
 
@@ -107,7 +153,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       longUrl.includes(process.env.NEXT_PUBLIC_SITE_URL || "") ||
       longUrl.includes("localhost")
     ) {
-      setWarning("A true ninja does not shorten their own URL");
+      setWarningWithTimeout("A true ninja does not shorten their own URL");
       return;
     }
 
@@ -128,7 +174,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       setLongUrl(""); // Clear input after successful creation
     } catch (error) {
       console.error(error);
-      setError("Failed to shorten URL. Please try again.");
+      setErrorWithTimeout("Failed to shorten URL. Please try again.");
     } finally {
       setIsLoading(false);
     }
