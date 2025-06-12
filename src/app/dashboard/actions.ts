@@ -2,14 +2,18 @@
 
 import { getUserUrls } from "@/lib/supabase/queries";
 import { createClient } from "@/lib/supabase/supabase-server";
+import { redirect } from "next/navigation";
 
 export async function signOut() {
   const supabase = await createClient();
   const { error } = await supabase.auth.signOut();
 
-  if (!error) {
+  if (error) {
+    console.error("Error signing out:", error);
     throw new Error("Failed to sign out");
   }
+
+  redirect("/");
 }
 
 export async function fetchUserUrls(userId: string) {
