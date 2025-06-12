@@ -5,35 +5,25 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import type { User } from "@supabase/supabase-js";
 import { signOut } from "@/app/dashboard/actions";
-import { fetchUserUrls } from "@/app/dashboard/actions";
 import { UrlRow } from "@/components/dashboard/row";
 import { RefreshCcwIcon } from "lucide-react";
-import { createClient } from "@/lib/supabase/supabase-client";
-
-export interface UserUrl {
-  id: number;
-  short_url: string;
-  long_url: string;
-  created_at: string;
-  visits?: number; // Optional since it comes from url_metric join
-}
+import { UrlProvider, useUrls } from "@/contexts/url-context";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
+// Inner component that uses the URL context
+function DashboardContent({ children }: DashboardLayoutProps) {
+  const { userUrls, refreshUrls, isRefreshing, user, isLoadingUser } =
+    useUrls();
+
   const [username, setUsername] = useState("");
   const [longUrl, setLongUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
-  const [userUrls, setUserUrls] = useState<UserUrl[]>([]);
   const [isErrorFading, setIsErrorFading] = useState(false);
   const [isWarningFading, setIsWarningFading] = useState(false);
 
@@ -56,34 +46,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     };
   }, []);
 
-  // Get user on mount
+  // Set username when user is available
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const supabase = createClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (user && user.id) {
-          setUser(user);
-          setUsername(
-            user.user_metadata.full_name?.split(" ")[0] ??
-              user.user_metadata.email
-          );
-
-          fetchUserUrls(user.id).then((data) => {
-            setUserUrls(data || []);
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      } finally {
-        setIsLoadingUser(false);
-      }
-    };
-    getUser();
-  }, [user?.id]);
+    if (user) {
+      setUsername(
+        user.user_metadata.full_name?.split(" ")[0] ?? user.user_metadata.email
+      );
+    }
+  }, [user]);
 
   // Pre-fill URL if provided from URL params
   useEffect(() => {
@@ -174,18 +144,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     setIsLoading(true);
     try {
-      const response = await axios.post("/urls", { longUrl });
-
-      // Add new URL to top of list with animation
-      const newUrl: UserUrl = {
-        id: Math.random(), // temporary ID, will be replaced when refetched
-        short_url: response.data.shortUrl,
-        long_url: longUrl,
-        visits: 0,
-        created_at: new Date().toISOString(),
-      };
-
-      setUserUrls((prev) => [newUrl, ...prev]);
+      await axios.post("/urls", { longUrl });
+      refreshUrls();
       setLongUrl(""); // Clear input after successful creation
     } catch (error) {
       console.error(error);
@@ -322,16 +282,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   variant="ghost"
                   size="icon"
                   onClick={async () => {
-                    if (user?.id) {
-                      setIsRefreshing(true);
-                      try {
-                        const urls = await fetchUserUrls(user.id);
-                        if (urls) setUserUrls(urls);
-                      } catch {
-                        setError("Failed to refresh URLs. Please try again.");
-                      } finally {
-                        setIsRefreshing(false);
-                      }
+                    try {
+                      await refreshUrls();
+                    } catch {
+                      setError("Failed to refresh URLs. Please try again.");
                     }
                   }}
                   className="text-white/70 hover:bg-white/10 hover:text-white"
@@ -361,5 +315,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {children}
       </div>
     </div>
+  );
+}
+
+// Main layout component that provides the URL context
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  return (
+    <UrlProvider>
+      <DashboardContent>{children}</DashboardContent>
+    </UrlProvider>
   );
 }

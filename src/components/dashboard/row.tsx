@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { UserUrl } from "@/app/dashboard/layout";
+import { type UserUrl } from "@/contexts/url-context";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
