@@ -4,24 +4,37 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:seed": "pnpm run supabase:seed && next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "supabase:generate": "npx supabase gen types typescript --project-id njvjlzmflamitrqrxgib > src/lib/supabase/types.ts"
+    "supabase:generate:dev": "npx supabase gen types typescript --project-id njvjlzmflamitrqrxgib > src/lib/supabase/types.ts",
+    "supabase:generate:prod": "npx supabase gen types typescript --project-id gcfknnukbzzfjgafmfxj > src/lib/supabase/types.ts",
+    "supabase:link:dev": "npx supabase link --project-ref njvjlzmflamitrqrxgib",
+    "supabase:link:prod": "npx supabase link --project-ref gcfknnukbzzfjgafmfxj",
+    "supabase:reset:dev": "npx supabase db reset --linked",
+    "supabase:seed:dev": "npx supabase db seed --linked",
+    "supabase:migrate:dev": "npx supabase db push --linked",
+    "db:setup:dev": "pnpm run supabase:link:dev && pnpm run supabase:migrate:dev && pnpm run supabase:seed:dev",
+    "db:reset:dev": "pnpm run supabase:link:dev && pnpm run supabase:reset:dev"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-popover": "^1.1.14",
+    "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.2.3",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.0",
     "axios": "^1.9.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "lucide-react": "^0.512.0",
     "next": "15.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "recharts": "^2.15.3",
     "tailwind-merge": "^3.3.0"
   },
   "devDependencies": {
