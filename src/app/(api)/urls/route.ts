@@ -63,6 +63,6 @@ export async function POST(request: NextRequest) {
     fullShortUrl:
       process.env.NODE_ENV === "production"
         ? `${process.env.NEXT_PUBLIC_SITE_URL}/${shortUrl}`
-        : `http://localhost:3001/${shortUrl}`,
+        : `http://localhost:3000/${shortUrl}`,
   });
 }

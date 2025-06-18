@@ -186,7 +186,7 @@ function DashboardContent({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="relative h-screen bg-foreground">
+    <div className="relative h-screen bg-foreground w-full overflow-hidden">
       {/* Navbar */}
       <nav className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-12 md:px-24 lg:px-12 py-4 bg-black/10 backdrop-blur-sm">
         <div className="flex items-center space-x-2">
@@ -210,11 +210,11 @@ function DashboardContent({ children }: DashboardLayoutProps) {
       </nav>
 
       {/* Main content - Two panel layout */}
-      <div className="relative z-0 flex h-screen bg-foreground pt-16 pb-4 px-12 md:px-24 lg:px-12 gap-6">
+      <div className="relative z-0 flex h-full bg-foreground pt-20 pb-4 px-12 md:px-24 lg:px-12 gap-6 overflow-hidden">
         {/* Left Panel - URLs Management */}
-        <div className="flex flex-col w-1/3">
+        <div className="flex flex-col w-1/3 min-h-0">
           {/* Input and Button Section */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-6 h-12">
+          <div className="flex flex-col sm:flex-row gap-3 mb-6 h-12 flex-shrink-0">
             <Input
               type="url"
               placeholder="Paste your long URL here..."
@@ -246,7 +246,7 @@ function DashboardContent({ children }: DashboardLayoutProps) {
           {/* Error Message */}
           {(error || isErrorFading) && (
             <div
-              className={`mb-6 transition-all duration-300 ease-out ${
+              className={`mb-6 flex-shrink-0 transition-all duration-300 ease-out ${
                 isErrorFading
                   ? "opacity-0 -translate-y-2"
                   : "opacity-100 translate-y-0"
@@ -261,7 +261,7 @@ function DashboardContent({ children }: DashboardLayoutProps) {
           {/* Warning Message */}
           {(warning || isWarningFading) && (
             <div
-              className={`mb-6 transition-all duration-300 ease-out ${
+              className={`mb-6 flex-shrink-0 transition-all duration-300 ease-out ${
                 isWarningFading
                   ? "opacity-0 -translate-y-2"
                   : "opacity-100 translate-y-0"
@@ -274,9 +274,9 @@ function DashboardContent({ children }: DashboardLayoutProps) {
           )}
 
           {/* URLs List */}
-          <Card className="flex-1 bg-white/5 backdrop-blur border-white/10 overflow-hidden">
-            <div className="px-6">
-              <div className="flex justify-between items-center mb-4">
+          <Card className="flex-1 bg-white/5 backdrop-blur border-white/10 overflow-hidden min-h-0">
+            <div className="px-6 h-full flex flex-col">
+              <div className="flex justify-between items-center mb-4 flex-shrink-0">
                 <h3 className="text-white text-xl font-semibold">Your Links</h3>
                 <Button
                   variant="ghost"
@@ -295,7 +295,7 @@ function DashboardContent({ children }: DashboardLayoutProps) {
                   />
                 </Button>
               </div>
-              <div className="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto">
+              <div className="space-y-3 flex-1 overflow-y-auto min-h-0">
                 {userUrls.map((url, index) => (
                   <UrlRow key={`${url.id}-${index}`} url={url} index={index} />
                 ))}
@@ -312,7 +312,7 @@ function DashboardContent({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Right Panel - Content from children */}
-        {children}
+        <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
       </div>
     </div>
   );

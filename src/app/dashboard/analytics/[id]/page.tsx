@@ -24,6 +24,7 @@ interface UrlMetric {
   url_id: number;
   datetime: string;
   visits: number;
+  unique_visitors: number;
 }
 
 const timePeriodOptions = [
@@ -40,31 +41,95 @@ export default function AnalyticsPage() {
   const [metrics, setMetrics] = useState<UrlMetric[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState("today");
 
   // Transform metrics data for chart
   const chartData = React.useMemo(() => {
     if (!metrics || metrics.length === 0) return [];
 
-    // Group metrics by date and sum visits
-    const groupedData = metrics.reduce((acc, metric) => {
-      const date = new Date(metric.datetime).toISOString().split("T")[0]; // Get YYYY-MM-DD format
-      if (!acc[date]) {
-        acc[date] = 0;
-      }
-      acc[date] += metric.visits;
-      return acc;
-    }, {} as Record<string, number>);
+    console.log("Raw metrics:", metrics);
 
-    // Convert to chart format and sort by date
-    return Object.entries(groupedData)
-      .map(([date, visits]) => ({
-        date,
-        visits,
-        desktop: Math.floor(visits * 0.6), // Mock desktop visits
-        mobile: Math.floor(visits * 0.4), // Mock mobile visits
-      }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [metrics]);
+    const isToday = selectedPeriod === "today";
+
+    if (isToday) {
+      // For "today": generate hourly data with all 24 hours
+      const hourlyData: Record<
+        string,
+        { visits: number; unique_visitors: number }
+      > = {};
+
+      // Initialize all 24 hours for today with 0 values
+      const today = new Date();
+      for (let hour = 0; hour < 24; hour++) {
+        const hourKey = `${today.getFullYear()}-${String(
+          today.getMonth() + 1
+        ).padStart(2, "0")}-${String(today.getDate()).padStart(
+          2,
+          "0"
+        )}T${String(hour).padStart(2, "0")}:00:00`;
+        hourlyData[hourKey] = { visits: 0, unique_visitors: 0 };
+      }
+
+      // Fill in actual data from metrics
+      metrics.forEach((metric) => {
+        const metricDate = new Date(metric.datetime);
+        const isFromToday =
+          metricDate.getDate() === today.getDate() &&
+          metricDate.getMonth() === today.getMonth() &&
+          metricDate.getFullYear() === today.getFullYear();
+
+        if (isFromToday) {
+          const hourKey = `${metricDate.getFullYear()}-${String(
+            metricDate.getMonth() + 1
+          ).padStart(2, "0")}-${String(metricDate.getDate()).padStart(
+            2,
+            "0"
+          )}T${String(metricDate.getHours()).padStart(2, "0")}:00:00`;
+          if (hourlyData[hourKey]) {
+            hourlyData[hourKey].visits += metric.visits;
+            hourlyData[hourKey].unique_visitors += metric.unique_visitors;
+          }
+        }
+      });
+
+      // Convert to chart format and sort by time
+      const result = Object.entries(hourlyData)
+        .map(([datetime, data]) => ({
+          date: datetime,
+          visits: data.visits,
+          unique_visitors: data.unique_visitors,
+        }))
+        .sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+      return result;
+    } else {
+      // For other periods: group by date (existing logic)
+      const groupedData = metrics.reduce((acc, metric) => {
+        const date = new Date(metric.datetime).toISOString().split("T")[0]; // Get YYYY-MM-DD format
+        if (!acc[date]) {
+          acc[date] = { visits: 0, unique_visitors: 0 };
+        }
+        acc[date].visits += metric.visits;
+        acc[date].unique_visitors += metric.unique_visitors;
+        return acc;
+      }, {} as Record<string, { visits: number; unique_visitors: number }>);
+
+      // Convert to chart format and sort by date
+      const result = Object.entries(groupedData)
+        .map(([date, data]) => ({
+          date,
+          visits: data.visits,
+          unique_visitors: data.unique_visitors,
+        }))
+        .sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+      return result;
+    }
+  }, [metrics, selectedPeriod]);
 
   // Get the current URL from context instead of API call
   const url = userUrls.find((u) => u.id === parseInt(id as string)) || null;
@@ -294,6 +359,8 @@ export default function AnalyticsPage() {
             title="URL Analytics"
             description="Track visits to your shortened URL over time"
             data={chartData}
+            timeGranularity={selectedPeriod === "today" ? "hourly" : "daily"}
+            onFilterChange={setSelectedPeriod}
           />
         </div>
       </div>

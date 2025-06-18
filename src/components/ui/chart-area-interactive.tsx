@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import {
   Card,
@@ -16,7 +16,6 @@ import {
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
-  ChartTooltipContent,
 } from "@/components/ui/chart";
 import {
   Select,
@@ -41,108 +40,15 @@ interface ChartAreaInteractiveProps {
   defaultFilter?: string;
   title?: string;
   description?: string;
+  timeGranularity?: "hourly" | "daily";
+  onFilterChange?: (value: string) => void;
   data?: Array<{
     date: string;
-    desktop?: number;
-    mobile?: number;
-    visits?: number;
-    [key: string]: string | number | undefined;
+    visits: number;
+    unique_visitors: number;
+    [key: string]: string | number;
   }>;
 }
-
-const chartData = [
-  { date: "2024-04-01", desktop: 222, mobile: 150 },
-  { date: "2024-04-02", desktop: 97, mobile: 180 },
-  { date: "2024-04-03", desktop: 167, mobile: 120 },
-  { date: "2024-04-04", desktop: 242, mobile: 260 },
-  { date: "2024-04-05", desktop: 373, mobile: 290 },
-  { date: "2024-04-06", desktop: 301, mobile: 340 },
-  { date: "2024-04-07", desktop: 245, mobile: 180 },
-  { date: "2024-04-08", desktop: 409, mobile: 320 },
-  { date: "2024-04-09", desktop: 59, mobile: 110 },
-  { date: "2024-04-10", desktop: 261, mobile: 190 },
-  { date: "2024-04-11", desktop: 327, mobile: 350 },
-  { date: "2024-04-12", desktop: 292, mobile: 210 },
-  { date: "2024-04-13", desktop: 342, mobile: 380 },
-  { date: "2024-04-14", desktop: 137, mobile: 220 },
-  { date: "2024-04-15", desktop: 120, mobile: 170 },
-  { date: "2024-04-16", desktop: 138, mobile: 190 },
-  { date: "2024-04-17", desktop: 446, mobile: 360 },
-  { date: "2024-04-18", desktop: 364, mobile: 410 },
-  { date: "2024-04-19", desktop: 243, mobile: 180 },
-  { date: "2024-04-20", desktop: 89, mobile: 150 },
-  { date: "2024-04-21", desktop: 137, mobile: 200 },
-  { date: "2024-04-22", desktop: 224, mobile: 170 },
-  { date: "2024-04-23", desktop: 138, mobile: 230 },
-  { date: "2024-04-24", desktop: 387, mobile: 290 },
-  { date: "2024-04-25", desktop: 215, mobile: 250 },
-  { date: "2024-04-26", desktop: 75, mobile: 130 },
-  { date: "2024-04-27", desktop: 383, mobile: 420 },
-  { date: "2024-04-28", desktop: 122, mobile: 180 },
-  { date: "2024-04-29", desktop: 315, mobile: 240 },
-  { date: "2024-04-30", desktop: 454, mobile: 380 },
-  { date: "2024-05-01", desktop: 165, mobile: 220 },
-  { date: "2024-05-02", desktop: 293, mobile: 310 },
-  { date: "2024-05-03", desktop: 247, mobile: 190 },
-  { date: "2024-05-04", desktop: 385, mobile: 420 },
-  { date: "2024-05-05", desktop: 481, mobile: 390 },
-  { date: "2024-05-06", desktop: 498, mobile: 520 },
-  { date: "2024-05-07", desktop: 388, mobile: 300 },
-  { date: "2024-05-08", desktop: 149, mobile: 210 },
-  { date: "2024-05-09", desktop: 227, mobile: 180 },
-  { date: "2024-05-10", desktop: 293, mobile: 330 },
-  { date: "2024-05-11", desktop: 335, mobile: 270 },
-  { date: "2024-05-12", desktop: 197, mobile: 240 },
-  { date: "2024-05-13", desktop: 197, mobile: 160 },
-  { date: "2024-05-14", desktop: 448, mobile: 490 },
-  { date: "2024-05-15", desktop: 473, mobile: 380 },
-  { date: "2024-05-16", desktop: 338, mobile: 400 },
-  { date: "2024-05-17", desktop: 499, mobile: 420 },
-  { date: "2024-05-18", desktop: 315, mobile: 350 },
-  { date: "2024-05-19", desktop: 235, mobile: 180 },
-  { date: "2024-05-20", desktop: 177, mobile: 230 },
-  { date: "2024-05-21", desktop: 82, mobile: 140 },
-  { date: "2024-05-22", desktop: 81, mobile: 120 },
-  { date: "2024-05-23", desktop: 252, mobile: 290 },
-  { date: "2024-05-24", desktop: 294, mobile: 220 },
-  { date: "2024-05-25", desktop: 201, mobile: 250 },
-  { date: "2024-05-26", desktop: 213, mobile: 170 },
-  { date: "2024-05-27", desktop: 420, mobile: 460 },
-  { date: "2024-05-28", desktop: 233, mobile: 190 },
-  { date: "2024-05-29", desktop: 78, mobile: 130 },
-  { date: "2024-05-30", desktop: 340, mobile: 280 },
-  { date: "2024-05-31", desktop: 178, mobile: 230 },
-  { date: "2024-06-01", desktop: 178, mobile: 200 },
-  { date: "2024-06-02", desktop: 470, mobile: 410 },
-  { date: "2024-06-03", desktop: 103, mobile: 160 },
-  { date: "2024-06-04", desktop: 439, mobile: 380 },
-  { date: "2024-06-05", desktop: 88, mobile: 140 },
-  { date: "2024-06-06", desktop: 294, mobile: 250 },
-  { date: "2024-06-07", desktop: 323, mobile: 370 },
-  { date: "2024-06-08", desktop: 385, mobile: 320 },
-  { date: "2024-06-09", desktop: 438, mobile: 480 },
-  { date: "2024-06-10", desktop: 155, mobile: 200 },
-  { date: "2024-06-11", desktop: 92, mobile: 150 },
-  { date: "2024-06-12", desktop: 492, mobile: 420 },
-  { date: "2024-06-13", desktop: 81, mobile: 130 },
-  { date: "2024-06-14", desktop: 426, mobile: 380 },
-  { date: "2024-06-15", desktop: 307, mobile: 350 },
-  { date: "2024-06-16", desktop: 371, mobile: 310 },
-  { date: "2024-06-17", desktop: 475, mobile: 520 },
-  { date: "2024-06-18", desktop: 107, mobile: 170 },
-  { date: "2024-06-19", desktop: 341, mobile: 290 },
-  { date: "2024-06-20", desktop: 408, mobile: 450 },
-  { date: "2024-06-21", desktop: 169, mobile: 210 },
-  { date: "2024-06-22", desktop: 317, mobile: 270 },
-  { date: "2024-06-23", desktop: 480, mobile: 530 },
-  { date: "2024-06-24", desktop: 132, mobile: 180 },
-  { date: "2024-06-25", desktop: 141, mobile: 190 },
-  { date: "2024-06-26", desktop: 434, mobile: 380 },
-  { date: "2024-06-27", desktop: 448, mobile: 490 },
-  { date: "2024-06-28", desktop: 149, mobile: 200 },
-  { date: "2024-06-29", desktop: 103, mobile: 160 },
-  { date: "2024-06-30", desktop: 446, mobile: 400 },
-];
 
 // Default filter options
 const defaultFilterOptions: FilterOption[] = [
@@ -152,15 +58,12 @@ const defaultFilterOptions: FilterOption[] = [
 ];
 
 const chartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  desktop: {
-    label: "Desktop",
+  visits: {
+    label: "Visits",
     color: "var(--chart-1)",
   },
-  mobile: {
-    label: "Mobile",
+  unique_visitors: {
+    label: "Unique Visitors",
     color: "var(--chart-2)",
   },
 } satisfies ChartConfig;
@@ -171,14 +74,22 @@ export function ChartAreaInteractive({
   defaultFilter,
   title = "Area Chart - Interactive",
   description = "Showing total visitors for the last 3 months",
+  timeGranularity = "daily",
+  onFilterChange,
   data: customData,
 }: ChartAreaInteractiveProps) {
   // Use the first filter option as default if no default is provided
   const initialFilter = defaultFilter || filterOptions[0]?.value || "90d";
   const [timeRange, setTimeRange] = React.useState(initialFilter);
 
+  // Handle filter changes
+  const handleFilterChange = (value: string) => {
+    setTimeRange(value);
+    onFilterChange?.(value);
+  };
+
   // Use custom data if provided, otherwise use default chart data
-  const chartDataSource = customData || chartData;
+  const chartDataSource = React.useMemo(() => customData ?? [], [customData]);
 
   const filteredData = React.useMemo(() => {
     const selectedFilter = filterOptions.find((f) => f.value === timeRange);
@@ -221,7 +132,7 @@ export function ChartAreaInteractive({
             {description}
           </CardDescription>
         </div>
-        <Select value={timeRange} onValueChange={setTimeRange}>
+        <Select value={timeRange} onValueChange={handleFilterChange}>
           <SelectTrigger
             className={cn(
               "hidden w-[160px] rounded-lg sm:ml-auto sm:flex",
@@ -261,15 +172,21 @@ export function ChartAreaInteractive({
           config={chartConfig}
           className="aspect-auto h-[250px] w-full"
         >
-          <AreaChart data={filteredData}>
+          <AreaChart
+            data={filteredData}
+            margin={{
+              left: -20,
+              right: 12,
+            }}
+          >
             <defs>
-              <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="fillVisits" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
                   stopColor={
                     ninjaMode
-                      ? "rgba(255, 255, 255, 0.8)"
-                      : "var(--color-desktop)"
+                      ? "rgba(140, 200, 255, 0.9)"
+                      : "var(--color-visits)"
                   }
                   stopOpacity={0.8}
                 />
@@ -277,19 +194,25 @@ export function ChartAreaInteractive({
                   offset="95%"
                   stopColor={
                     ninjaMode
-                      ? "rgba(255, 255, 255, 0.1)"
-                      : "var(--color-desktop)"
+                      ? "rgba(140, 200, 255, 0.1)"
+                      : "var(--color-visits)"
                   }
                   stopOpacity={0.1}
                 />
               </linearGradient>
-              <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient
+                id="fillUniqueVisitors"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
                 <stop
                   offset="5%"
                   stopColor={
                     ninjaMode
-                      ? "rgba(255, 255, 255, 0.6)"
-                      : "var(--color-mobile)"
+                      ? "rgba(200, 140, 255, 0.7)"
+                      : "var(--color-unique_visitors)"
                   }
                   stopOpacity={0.8}
                 />
@@ -297,8 +220,8 @@ export function ChartAreaInteractive({
                   offset="95%"
                   stopColor={
                     ninjaMode
-                      ? "rgba(255, 255, 255, 0.05)"
-                      : "var(--color-mobile)"
+                      ? "rgba(200, 140, 255, 0.05)"
+                      : "var(--color-unique_visitors)"
                   }
                   stopOpacity={0.1}
                 />
@@ -320,49 +243,95 @@ export function ChartAreaInteractive({
               }}
               tickFormatter={(value) => {
                 const date = new Date(value);
-                return date.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                });
+                if (timeGranularity === "hourly") {
+                  // Format as "1 AM", "2 PM", etc.
+                  return date.toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    hour12: true,
+                  });
+                } else {
+                  // Format as "Apr 1", "Apr 2", etc.
+                  return date.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  });
+                }
+              }}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickCount={5}
+              tick={{
+                fill: ninjaMode ? "rgba(255, 255, 255, 0.7)" : undefined,
+                fontSize: 12,
               }}
             />
             <ChartTooltip
               cursor={false}
-              content={
-                <ChartTooltipContent
-                  className={cn(
-                    ninjaMode &&
-                      "bg-black/90 backdrop-blur border-white/10 text-white"
-                  )}
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    });
-                  }}
-                  indicator="dot"
-                />
-              }
+              content={({ active, payload, label }) => {
+                if (!active || !payload || payload.length === 0) {
+                  return null;
+                }
+
+                const date = new Date(label);
+                const formattedLabel =
+                  timeGranularity === "hourly"
+                    ? date.toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        hour12: true,
+                      })
+                    : date.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      });
+
+                return (
+                  <div
+                    className={cn(
+                      "rounded-lg border bg-background p-2 shadow-md",
+                      ninjaMode &&
+                        "bg-black/90 backdrop-blur border-white/10 text-white"
+                    )}
+                  >
+                    <p className="font-medium">{formattedLabel}</p>
+                    {payload.map((entry, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: entry.color }}
+                        />
+                        <span className="text-sm">
+                          {entry.dataKey}: {entry.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }}
             />
             <Area
-              dataKey="mobile"
+              dataKey="visits"
               type="natural"
-              fill="url(#fillMobile)"
+              fill="url(#fillVisits)"
+              fillOpacity={0.4}
               stroke={
-                ninjaMode ? "rgba(255, 255, 255, 0.6)" : "var(--color-mobile)"
+                ninjaMode ? "rgba(140, 200, 255, 0.9)" : "var(--color-visits)"
               }
               strokeWidth={2}
-              stackId="a"
             />
             <Area
-              dataKey="desktop"
+              dataKey="unique_visitors"
               type="natural"
-              fill="url(#fillDesktop)"
+              fill="url(#fillUniqueVisitors)"
+              fillOpacity={0.4}
               stroke={
-                ninjaMode ? "rgba(255, 255, 255, 0.8)" : "var(--color-desktop)"
+                ninjaMode
+                  ? "rgba(200, 140, 255, 0.7)"
+                  : "var(--color-unique_visitors)"
               }
               strokeWidth={2}
-              stackId="a"
             />
             <ChartLegend
               content={

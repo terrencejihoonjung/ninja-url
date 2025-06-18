@@ -4,19 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "dev:seed": "pnpm run supabase:seed && next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "supabase:generate:dev": "npx supabase gen types typescript --project-id njvjlzmflamitrqrxgib > src/lib/supabase/types.ts",
-    "supabase:generate:prod": "npx supabase gen types typescript --project-id gcfknnukbzzfjgafmfxj > src/lib/supabase/types.ts",
-    "supabase:link:dev": "npx supabase link --project-ref njvjlzmflamitrqrxgib",
-    "supabase:link:prod": "npx supabase link --project-ref gcfknnukbzzfjgafmfxj",
-    "supabase:reset:dev": "npx supabase db reset --linked",
-    "supabase:seed:dev": "npx supabase db seed --linked",
-    "supabase:migrate:dev": "npx supabase db push --linked",
-    "db:setup:dev": "pnpm run supabase:link:dev && pnpm run supabase:migrate:dev && pnpm run supabase:seed:dev",
-    "db:reset:dev": "pnpm run supabase:link:dev && pnpm run supabase:reset:dev"
+    "seed": "dotenv -e .env.local -- tsx scripts/seed.ts",
+    "db:link:dev": "supabase link --project-ref njvjlzmflamitrqrxgib",
+    "db:link:prod": "supabase link --project-ref gcfknnukbzzfjgafmfxj",
+    "db:generate": "npx supabase gen types typescript --project-id 'njvjlzmflamitrqrxgib' > ./src/lib/supabase/types.ts",
+    "db:migrate": "supabase db diff -f",
+    "db:push:dev": "pnpm run db:link:dev && supabase db push",
+    "db:push:prod": "pnpm run db:link:prod && supabase db push",
+    "db:setup": "supabase stop --no-backup && source ./supabase/.env && supabase start && supabase db reset && pnpm run seed && pnpm run db:generate",
+    "db:restart": "supabase stop --no-backup && source ./supabase/.env && supabase start"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",
@@ -48,6 +47,7 @@
     "eslint-config-next": "15.3.3",
     "supabase": ">=1.8.1",
     "tailwindcss": "^4",
+    "tsx": "^4.19.2",
     "tw-animate-css": "^1.3.3",
     "typescript": "^5"
   }
