@@ -10,12 +10,16 @@
     "seed": "dotenv -e .env.local -- tsx scripts/seed.ts",
     "db:link:dev": "supabase link --project-ref njvjlzmflamitrqrxgib",
     "db:link:prod": "supabase link --project-ref gcfknnukbzzfjgafmfxj",
-    "db:generate": "npx supabase gen types typescript --project-id 'njvjlzmflamitrqrxgib' > ./src/lib/supabase/types.ts",
+    "db:generate:local": "npx supabase gen types typescript --local > ./src/lib/supabase/types.ts",
+    "db:generate:dev": "npx supabase gen types typescript --project-id 'njvjlzmflamitrqrxgib' > ./src/lib/supabase/types.ts",
     "db:migrate": "supabase db diff -f",
     "db:push:dev": "pnpm run db:link:dev && supabase db push",
     "db:push:prod": "pnpm run db:link:prod && supabase db push",
-    "db:setup": "supabase stop --no-backup && source ./supabase/.env && supabase start && supabase db reset && pnpm run seed && pnpm run db:generate",
-    "db:restart": "supabase stop --no-backup && source ./supabase/.env && supabase start"
+    "db:setup": "supabase stop --no-backup && source ./supabase/.env && supabase start && supabase db reset && pnpm run seed && pnpm run db:generate:local",
+    "db:restart": "supabase stop --no-backup && source ./supabase/.env && supabase start",
+    "dev:setup": "pnpm run db:setup",
+    "dev:start": "pnpm run dev",
+    "dev:stop": "supabase stop"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",

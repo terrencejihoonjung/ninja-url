@@ -1,5 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/supabase-server";
+import { createHash } from "crypto";
+
+const createVisitorFingerprint = (
+  ip: string,
+  userAgent: string,
+  acceptLanguage: string
+) => {
+  const fingerprint = createHash("sha256").update(
+    `${ip}:${userAgent}:${acceptLanguage}`
+  );
+  return fingerprint.digest("hex");
+};
+
+const getClientIP = (request: NextRequest) => {
+  const forwarded = request.headers.get("x-forwarded-for");
+  const realIP = request.headers.get("x-real-ip");
+
+  if (forwarded) {
+    const ips = forwarded.split(",").map((ip) => ip.trim());
+    return ips[0];
+  }
+
+  if (realIP) {
+    return realIP;
+  }
+
+  return "unknown";
+};
 
 // GET /{shortUrl} -> redirects to the long URL
 export async function GET(
@@ -35,8 +63,6 @@ export async function GET(
     .limit(1)
     .maybeSingle();
 
-  console.log("existingMetric", existingMetric);
-
   if (existingMetric) {
     const { error: updateError } = await supabase
       .from("url_metric")
@@ -61,6 +87,61 @@ export async function GET(
       console.error("Inserting url metric error:", insertError);
       return NextResponse.json(
         { error: "Failed to insert url metric" },
+        { status: 500 }
+      );
+    }
+  }
+
+  // Track unique visitors
+  const ip = getClientIP(request);
+  const userAgent = request.headers.get("user-agent") || "";
+  const acceptLanguage = request.headers.get("accept-language") || "";
+  const visitorFingerprint = createVisitorFingerprint(
+    ip,
+    userAgent,
+    acceptLanguage
+  );
+
+  // Track unique visitors - check if this fingerprint + url_id combination exists
+  const { data: existingUniqueVisitor } = await supabase
+    .from("unique_visitor")
+    .select("id")
+    .eq("fingerprint", visitorFingerprint)
+    .eq("url_id", urlData.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (!existingUniqueVisitor) {
+    // New unique visitor for this URL
+    const { error: insertError } = await supabase
+      .from("unique_visitor")
+      .insert({
+        fingerprint: visitorFingerprint,
+        url_id: urlData.id,
+        first_visit_at: new Date().toISOString(),
+        last_visit_at: new Date().toISOString(),
+      });
+
+    if (insertError) {
+      console.error("Inserting unique visitor error:", insertError);
+      return NextResponse.json(
+        { error: "Failed to insert unique visitor" },
+        { status: 500 }
+      );
+    }
+  } else {
+    // Existing visitor returning - only update last_visit_at
+    const { error: updateError } = await supabase
+      .from("unique_visitor")
+      .update({
+        last_visit_at: new Date().toISOString(),
+      })
+      .eq("id", existingUniqueVisitor.id);
+
+    if (updateError) {
+      console.error("Updating unique visitor error:", updateError);
+      return NextResponse.json(
+        { error: "Failed to update unique visitor" },
         { status: 500 }
       );
     }

@@ -1,12 +1,19 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { getUrlMetrics, deleteUrl } from "./actions";
+import { getUrlAnalytics, getUrlSummaryStats, deleteUrl } from "./actions";
 import { Suspense, useEffect, useState } from "react";
 import * as React from "react";
 import { useUrls } from "@/contexts/url-context";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Trash2, Eye, Users, TrendingUp } from "lucide-react";
+import {
+  ExternalLink,
+  Trash2,
+  Eye,
+  Users,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,12 +26,20 @@ import Loading from "./loading";
 import { ChartAreaInteractive } from "@/components/ui/chart-area-interactive";
 import { Card, CardContent } from "@/components/ui/card";
 
-interface UrlMetric {
-  id: number;
-  url_id: number;
-  datetime: string;
+interface ChartDataPoint {
+  date: string;
   visits: number;
   unique_visitors: number;
+  [key: string]: string | number;
+}
+
+interface SummaryStats {
+  totalVisits: number;
+  uniqueVisitors: number;
+  returningVisitors: number;
+  totalVisitsChange: number;
+  uniqueVisitorsChange: number;
+  returningVisitorsChange: number;
 }
 
 const timePeriodOptions = [
@@ -32,121 +47,48 @@ const timePeriodOptions = [
   { value: "7days", label: "Last 7 Days", days: 7 },
   { value: "30days", label: "Last 30 Days", days: 30 },
   { value: "3months", label: "Last 3 Months", days: 90 },
+  { value: "alltime", label: "All Time", days: undefined },
 ];
 
 export default function AnalyticsPage() {
   const { id } = useParams();
   const router = useRouter();
   const { removeUrl, userUrls } = useUrls();
-  const [metrics, setMetrics] = useState<UrlMetric[]>([]);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [summaryStats, setSummaryStats] = useState<SummaryStats>({
+    totalVisits: 0,
+    uniqueVisitors: 0,
+    returningVisitors: 0,
+    totalVisitsChange: 0,
+    uniqueVisitorsChange: 0,
+    returningVisitorsChange: 0,
+  });
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState("today");
-
-  // Transform metrics data for chart
-  const chartData = React.useMemo(() => {
-    if (!metrics || metrics.length === 0) return [];
-
-    console.log("Raw metrics:", metrics);
-
-    const isToday = selectedPeriod === "today";
-
-    if (isToday) {
-      // For "today": generate hourly data with all 24 hours
-      const hourlyData: Record<
-        string,
-        { visits: number; unique_visitors: number }
-      > = {};
-
-      // Initialize all 24 hours for today with 0 values
-      const today = new Date();
-      for (let hour = 0; hour < 24; hour++) {
-        const hourKey = `${today.getFullYear()}-${String(
-          today.getMonth() + 1
-        ).padStart(2, "0")}-${String(today.getDate()).padStart(
-          2,
-          "0"
-        )}T${String(hour).padStart(2, "0")}:00:00`;
-        hourlyData[hourKey] = { visits: 0, unique_visitors: 0 };
-      }
-
-      // Fill in actual data from metrics
-      metrics.forEach((metric) => {
-        const metricDate = new Date(metric.datetime);
-        const isFromToday =
-          metricDate.getDate() === today.getDate() &&
-          metricDate.getMonth() === today.getMonth() &&
-          metricDate.getFullYear() === today.getFullYear();
-
-        if (isFromToday) {
-          const hourKey = `${metricDate.getFullYear()}-${String(
-            metricDate.getMonth() + 1
-          ).padStart(2, "0")}-${String(metricDate.getDate()).padStart(
-            2,
-            "0"
-          )}T${String(metricDate.getHours()).padStart(2, "0")}:00:00`;
-          if (hourlyData[hourKey]) {
-            hourlyData[hourKey].visits += metric.visits;
-            hourlyData[hourKey].unique_visitors += metric.unique_visitors;
-          }
-        }
-      });
-
-      // Convert to chart format and sort by time
-      const result = Object.entries(hourlyData)
-        .map(([datetime, data]) => ({
-          date: datetime,
-          visits: data.visits,
-          unique_visitors: data.unique_visitors,
-        }))
-        .sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-        );
-
-      return result;
-    } else {
-      // For other periods: group by date (existing logic)
-      const groupedData = metrics.reduce((acc, metric) => {
-        const date = new Date(metric.datetime).toISOString().split("T")[0]; // Get YYYY-MM-DD format
-        if (!acc[date]) {
-          acc[date] = { visits: 0, unique_visitors: 0 };
-        }
-        acc[date].visits += metric.visits;
-        acc[date].unique_visitors += metric.unique_visitors;
-        return acc;
-      }, {} as Record<string, { visits: number; unique_visitors: number }>);
-
-      // Convert to chart format and sort by date
-      const result = Object.entries(groupedData)
-        .map(([date, data]) => ({
-          date,
-          visits: data.visits,
-          unique_visitors: data.unique_visitors,
-        }))
-        .sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-        );
-
-      return result;
-    }
-  }, [metrics, selectedPeriod]);
 
   // Get the current URL from context instead of API call
   const url = userUrls.find((u) => u.id === parseInt(id as string)) || null;
 
   useEffect(() => {
-    const fetchMetrics = async () => {
-      if (!url) return; // Only fetch metrics if we have the URL from context
+    const fetchData = async () => {
+      if (!url) return; // Only fetch data if we have the URL from context
 
       try {
-        const metricsData = await getUrlMetrics(id as string);
-        setMetrics(metricsData);
+        // Fetch chart data and summary stats in parallel
+        const [chartResponse, statsResponse] = await Promise.all([
+          getUrlAnalytics(id as string, selectedPeriod),
+          getUrlSummaryStats(id as string, selectedPeriod),
+        ]);
+
+        setChartData(chartResponse);
+        setSummaryStats(statsResponse);
       } catch (error) {
-        console.error("Failed to fetch metrics:", error);
+        console.error("Failed to fetch analytics data:", error);
       }
     };
-    fetchMetrics();
-  }, [id, url]); // Removed timePeriod from dependency array since it's not used
+    fetchData();
+  }, [id, url, selectedPeriod]);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -269,16 +211,27 @@ export default function AnalyticsPage() {
               </div>
               <div className="space-y-2">
                 <p className="text-4xl font-bold text-white">
-                  {metrics
-                    .reduce((total, metric) => total + metric.visits, 0)
-                    .toLocaleString()}
+                  {summaryStats.totalVisits.toLocaleString()}
                 </p>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-400" />
-                  <span className="text-green-400 text-sm font-medium">
-                    +12% from last period
-                  </span>
-                </div>
+                {selectedPeriod !== "alltime" && (
+                  <div className="flex items-center gap-2">
+                    {summaryStats.totalVisitsChange >= 0 ? (
+                      <TrendingUp className="h-4 w-4 text-green-400" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 text-red-400" />
+                    )}
+                    <span
+                      className={`text-sm font-medium ${
+                        summaryStats.totalVisitsChange >= 0
+                          ? "text-green-400"
+                          : "text-red-400"
+                      }`}
+                    >
+                      {summaryStats.totalVisitsChange >= 0 ? "+" : ""}
+                      {summaryStats.totalVisitsChange}% from last period
+                    </span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -299,19 +252,27 @@ export default function AnalyticsPage() {
               </div>
               <div className="space-y-2">
                 <p className="text-4xl font-bold text-white">
-                  {Math.floor(
-                    metrics.reduce(
-                      (total, metric) => total + metric.visits,
-                      0
-                    ) * 0.75
-                  ).toLocaleString()}
+                  {summaryStats.uniqueVisitors.toLocaleString()}
                 </p>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-400" />
-                  <span className="text-green-400 text-sm font-medium">
-                    +8% from last period
-                  </span>
-                </div>
+                {selectedPeriod !== "alltime" && (
+                  <div className="flex items-center gap-2">
+                    {summaryStats.uniqueVisitorsChange >= 0 ? (
+                      <TrendingUp className="h-4 w-4 text-green-400" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 text-red-400" />
+                    )}
+                    <span
+                      className={`text-sm font-medium ${
+                        summaryStats.uniqueVisitorsChange >= 0
+                          ? "text-green-400"
+                          : "text-red-400"
+                      }`}
+                    >
+                      {summaryStats.uniqueVisitorsChange >= 0 ? "+" : ""}
+                      {summaryStats.uniqueVisitorsChange}% from last period
+                    </span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -332,19 +293,27 @@ export default function AnalyticsPage() {
               </div>
               <div className="space-y-2">
                 <p className="text-4xl font-bold text-white">
-                  {Math.floor(
-                    metrics.reduce(
-                      (total, metric) => total + metric.visits,
-                      0
-                    ) * 0.25
-                  ).toLocaleString()}
+                  {summaryStats.returningVisitors.toLocaleString()}
                 </p>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-400" />
-                  <span className="text-green-400 text-sm font-medium">
-                    +5% from last period
-                  </span>
-                </div>
+                {selectedPeriod !== "alltime" && (
+                  <div className="flex items-center gap-2">
+                    {summaryStats.returningVisitorsChange >= 0 ? (
+                      <TrendingUp className="h-4 w-4 text-green-400" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 text-red-400" />
+                    )}
+                    <span
+                      className={`text-sm font-medium ${
+                        summaryStats.returningVisitorsChange >= 0
+                          ? "text-green-400"
+                          : "text-red-400"
+                      }`}
+                    >
+                      {summaryStats.returningVisitorsChange >= 0 ? "+" : ""}
+                      {summaryStats.returningVisitorsChange}% from last period
+                    </span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -360,6 +329,7 @@ export default function AnalyticsPage() {
             description="Track visits to your shortened URL over time"
             data={chartData}
             timeGranularity={selectedPeriod === "today" ? "hourly" : "daily"}
+            hideXAxisLabels={selectedPeriod === "alltime"}
             onFilterChange={setSelectedPeriod}
           />
         </div>

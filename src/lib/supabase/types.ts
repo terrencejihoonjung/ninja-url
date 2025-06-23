@@ -7,8 +7,65 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          variables?: Json
+          extensions?: Json
+          operationName?: string
+          query?: string
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      unique_visitor: {
+        Row: {
+          fingerprint: string
+          first_visit_at: string
+          id: number
+          last_visit_at: string
+          url_id: number
+        }
+        Insert: {
+          fingerprint: string
+          first_visit_at: string
+          id?: number
+          last_visit_at: string
+          url_id: number
+        }
+        Update: {
+          fingerprint?: string
+          first_visit_at?: string
+          id?: number
+          last_visit_at?: string
+          url_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unique_visitor_url_id_fkey"
+            columns: ["url_id"]
+            isOneToOne: false
+            referencedRelation: "url"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       url: {
         Row: {
           created_at: string
@@ -38,7 +95,6 @@ export type Database = {
           created_at: string
           datetime: string
           id: number
-          unique_visitors: number
           url_id: number
           visits: number
         }
@@ -46,7 +102,6 @@ export type Database = {
           created_at?: string
           datetime: string
           id?: number
-          unique_visitors?: number
           url_id: number
           visits?: number
         }
@@ -54,7 +109,6 @@ export type Database = {
           created_at?: string
           datetime?: string
           id?: number
-          unique_visitors?: number
           url_id?: number
           visits?: number
         }
@@ -190,7 +244,11 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
 } as const
+

@@ -32,8 +32,14 @@ type MetricRecord = {
   url_id: number;
   datetime: string;
   visits: number;
-  unique_visitors: number;
   created_at: string;
+};
+
+type UniqueVisitorRecord = {
+  url_id: number;
+  fingerprint: string;
+  first_visit_at: string;
+  last_visit_at: string;
 };
 
 // Utility functions
@@ -180,16 +186,12 @@ async function seedMetrics(urls: { id: number; short_url: string }[]) {
   console.log("  - Generating hourly metrics for today...");
   const hourlyTimestamps = getHourlyTimestamps(today);
   const hourlyVisits = generateRealisticTrend(50, 24, 0.4);
-  const hourlyUniqueVisitors = hourlyVisits.map((visits) =>
-    Math.max(1, Math.round(visits * 0.7))
-  );
 
   hourlyTimestamps.forEach((timestamp, index) => {
     metricsToInsert.push({
       url_id: urls[0].id,
       datetime: timestamp.toISOString(),
       visits: hourlyVisits[index],
-      unique_visitors: hourlyUniqueVisitors[index],
       created_at: timestamp.toISOString(),
     });
   });
@@ -198,16 +200,12 @@ async function seedMetrics(urls: { id: number; short_url: string }[]) {
   console.log("  - Generating daily metrics for last 7 days...");
   const weekly = getDailyTimestamps(7);
   const weeklyVisits = generateRealisticTrend(200, 7, 0.3);
-  const weeklyUniqueVisitors = weeklyVisits.map((visits) =>
-    Math.max(1, Math.round(visits * 0.6))
-  );
 
   weekly.forEach((timestamp, index) => {
     metricsToInsert.push({
       url_id: urls[1].id,
       datetime: timestamp.toISOString(),
       visits: weeklyVisits[index],
-      unique_visitors: weeklyUniqueVisitors[index],
       created_at: timestamp.toISOString(),
     });
   });
@@ -216,16 +214,12 @@ async function seedMetrics(urls: { id: number; short_url: string }[]) {
   console.log("  - Generating daily metrics for last 30 days...");
   const monthly = getDailyTimestamps(30);
   const monthlyVisits = generateRealisticTrend(100, 30, 0.2);
-  const monthlyUniqueVisitors = monthlyVisits.map((visits) =>
-    Math.max(1, Math.round(visits * 0.5))
-  );
 
   monthly.forEach((timestamp, index) => {
     metricsToInsert.push({
       url_id: urls[2].id,
       datetime: timestamp.toISOString(),
       visits: monthlyVisits[index],
-      unique_visitors: monthlyUniqueVisitors[index],
       created_at: timestamp.toISOString(),
     });
   });
@@ -234,16 +228,12 @@ async function seedMetrics(urls: { id: number; short_url: string }[]) {
   console.log("  - Generating daily metrics for last 3 months...");
   const quarterly = getDailyTimestamps(90);
   const quarterlyVisits = generateRealisticTrend(80, 90, 0.15);
-  const quarterlyUniqueVisitors = quarterlyVisits.map((visits) =>
-    Math.max(1, Math.round(visits * 0.45))
-  );
 
   quarterly.forEach((timestamp, index) => {
     metricsToInsert.push({
       url_id: urls[3].id,
       datetime: timestamp.toISOString(),
       visits: quarterlyVisits[index],
-      unique_visitors: quarterlyUniqueVisitors[index],
       created_at: timestamp.toISOString(),
     });
   });
@@ -256,7 +246,6 @@ async function seedMetrics(urls: { id: number; short_url: string }[]) {
       url_id: urls[4].id,
       datetime: timestamp.toISOString(),
       visits: Math.round(hourlyVisits[index] * 1.5), // Higher traffic
-      unique_visitors: Math.round(hourlyUniqueVisitors[index] * 1.3),
       created_at: timestamp.toISOString(),
     });
   });
@@ -268,7 +257,6 @@ async function seedMetrics(urls: { id: number; short_url: string }[]) {
       url_id: urls[4].id,
       datetime: timestamp.toISOString(),
       visits: Math.round(weeklyVisits[index] * 1.2),
-      unique_visitors: Math.round(weeklyUniqueVisitors[index] * 1.1),
       created_at: timestamp.toISOString(),
     });
   });
@@ -279,7 +267,6 @@ async function seedMetrics(urls: { id: number; short_url: string }[]) {
       url_id: urls[4].id,
       datetime: timestamp.toISOString(),
       visits: Math.round(monthlyVisits[index] * 0.8),
-      unique_visitors: Math.round(monthlyUniqueVisitors[index] * 0.9),
       created_at: timestamp.toISOString(),
     });
   });
@@ -290,7 +277,6 @@ async function seedMetrics(urls: { id: number; short_url: string }[]) {
       url_id: urls[4].id,
       datetime: timestamp.toISOString(),
       visits: Math.round(quarterlyVisits[index] * 0.6),
-      unique_visitors: Math.round(quarterlyUniqueVisitors[index] * 0.7),
       created_at: timestamp.toISOString(),
     });
   });
@@ -299,30 +285,26 @@ async function seedMetrics(urls: { id: number; short_url: string }[]) {
   console.log("  - Generating varied patterns for remaining URLs...");
   for (let urlIndex = 5; urlIndex < urls.length; urlIndex++) {
     const pattern = urlIndex % 3;
-    let timestamps, visits, uniqueVisitors;
+    let timestamps, visits;
 
     switch (pattern) {
       case 0: // Viral pattern - high recent activity
         timestamps = getDailyTimestamps(14);
         visits = generateRealisticTrend(20, 14, 0.8);
         visits = visits.map((v, i) => (i > 10 ? v * 5 : v)); // Spike in last few days
-        uniqueVisitors = visits.map((v) => Math.max(1, Math.round(v * 0.8)));
         break;
       case 1: // Declining pattern
         timestamps = getDailyTimestamps(21);
         visits = generateRealisticTrend(300, 21, 0.2);
         visits = visits.map((v, i) => Math.round(v * (1 - i * 0.03))); // Gradual decline
-        uniqueVisitors = visits.map((v) => Math.max(1, Math.round(v * 0.4)));
         break;
       case 2: // Steady pattern
         timestamps = getDailyTimestamps(10);
         visits = generateRealisticTrend(150, 10, 0.1);
-        uniqueVisitors = visits.map((v) => Math.max(1, Math.round(v * 0.6)));
         break;
       default:
         timestamps = getDailyTimestamps(7);
         visits = generateRealisticTrend(100, 7, 0.3);
-        uniqueVisitors = visits.map((v) => Math.max(1, Math.round(v * 0.5)));
     }
 
     timestamps.forEach((timestamp, index) => {
@@ -330,7 +312,6 @@ async function seedMetrics(urls: { id: number; short_url: string }[]) {
         url_id: urls[urlIndex].id,
         datetime: timestamp.toISOString(),
         visits: visits[index],
-        unique_visitors: uniqueVisitors[index],
         created_at: timestamp.toISOString(),
       });
     });
@@ -356,6 +337,162 @@ async function seedMetrics(urls: { id: number; short_url: string }[]) {
   }
 
   console.log(`✅ Seeded ${metricsToInsert.length} metric records`);
+
+  // Return the metrics data for use in unique visitor generation
+  return metricsToInsert;
+}
+
+async function seedUniqueVisitors(
+  urls: { id: number; short_url: string }[],
+  metricsData: MetricRecord[]
+) {
+  console.log("Seeding unique visitors based on actual metrics...");
+
+  const uniqueVisitorsToInsert: UniqueVisitorRecord[] = [];
+  let visitorCounter = 0;
+
+  // Group metrics by URL for easier processing
+  const metricsByUrl = metricsData.reduce((acc, metric) => {
+    if (!acc[metric.url_id]) {
+      acc[metric.url_id] = [];
+    }
+    acc[metric.url_id].push(metric);
+    return acc;
+  }, {} as Record<number, MetricRecord[]>);
+
+  // Process each URL's metrics
+  for (const url of urls) {
+    const urlMetrics = metricsByUrl[url.id] || [];
+    console.log(
+      `  - Generating unique visitors for URL ${url.id} (${url.short_url})...`
+    );
+
+    // Sort metrics by datetime to process chronologically
+    urlMetrics.sort(
+      (a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime()
+    );
+
+    // Track visitors across time periods for this URL
+    const urlVisitors: Map<
+      string,
+      { first_visit_at: string; last_visit_at: string }
+    > = new Map();
+
+    for (const metric of urlMetrics) {
+      const datetime = metric.datetime;
+      const visits = metric.visits;
+
+      // Calculate unique visitors as a percentage of total visits (50-80% range)
+      const uniqueVisitorRatio = 0.5 + Math.random() * 0.3; // 50-80%
+      const uniqueVisitorsCount = Math.max(
+        1,
+        Math.floor(visits * uniqueVisitorRatio)
+      );
+
+      // Ensure unique visitors never exceed total visits
+      const actualUniqueVisitors = Math.min(uniqueVisitorsCount, visits);
+
+      // Generate new unique visitors for this time period
+      const newVisitorsCount = Math.floor(actualUniqueVisitors * 0.7); // 70% are new visitors
+      const returningVisitorsCount = actualUniqueVisitors - newVisitorsCount;
+
+      // Add new visitors
+      for (let i = 0; i < newVisitorsCount; i++) {
+        visitorCounter++;
+        const fingerprint = `visitor_${String(visitorCounter).padStart(
+          6,
+          "0"
+        )}_url_${url.id}`;
+
+        urlVisitors.set(fingerprint, {
+          first_visit_at: datetime,
+          last_visit_at: datetime,
+        });
+      }
+
+      // Handle returning visitors (update existing visitors' last_visit_at)
+      if (returningVisitorsCount > 0) {
+        const existingVisitors = Array.from(urlVisitors.keys());
+        const eligibleReturningVisitors = existingVisitors.filter(
+          (fingerprint) => {
+            const visitor = urlVisitors.get(fingerprint)!;
+            return new Date(visitor.first_visit_at) < new Date(datetime);
+          }
+        );
+
+        // Randomly select returning visitors
+        const shuffled = eligibleReturningVisitors.sort(
+          () => Math.random() - 0.5
+        );
+        const selectedReturning = shuffled.slice(
+          0,
+          Math.min(returningVisitorsCount, shuffled.length)
+        );
+
+        selectedReturning.forEach((fingerprint) => {
+          const visitor = urlVisitors.get(fingerprint)!;
+          visitor.last_visit_at = datetime;
+        });
+
+        // If we don't have enough existing visitors to return, create some new ones
+        const remainingReturning =
+          returningVisitorsCount - selectedReturning.length;
+        for (let i = 0; i < remainingReturning; i++) {
+          visitorCounter++;
+          const fingerprint = `visitor_${String(visitorCounter).padStart(
+            6,
+            "0"
+          )}_url_${url.id}`;
+
+          urlVisitors.set(fingerprint, {
+            first_visit_at: datetime,
+            last_visit_at: datetime,
+          });
+        }
+      }
+    }
+
+    // Convert to insert format
+    urlVisitors.forEach((visitor, fingerprint) => {
+      uniqueVisitorsToInsert.push({
+        url_id: url.id,
+        fingerprint,
+        first_visit_at: visitor.first_visit_at,
+        last_visit_at: visitor.last_visit_at,
+      });
+    });
+
+    console.log(
+      `    - Generated ${urlVisitors.size} unique visitors for URL ${url.id}`
+    );
+  }
+
+  // Insert all unique visitors in batches
+  console.log(
+    `  - Inserting ${uniqueVisitorsToInsert.length} unique visitor records...`
+  );
+  const batchSize = 1000;
+
+  for (let i = 0; i < uniqueVisitorsToInsert.length; i += batchSize) {
+    const batch = uniqueVisitorsToInsert.slice(i, i + batchSize);
+    const { error } = await supabase.from("unique_visitor").insert(batch);
+
+    if (error) {
+      throw new Error(
+        `Failed to seed unique visitors batch ${i}: ${error.message}`
+      );
+    }
+
+    console.log(
+      `    - Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(
+        uniqueVisitorsToInsert.length / batchSize
+      )}`
+    );
+  }
+
+  console.log(
+    `✅ Seeded ${uniqueVisitorsToInsert.length} unique visitor records`
+  );
 }
 
 async function main() {
@@ -379,7 +516,10 @@ async function main() {
     const urls = await seedUrls(userId);
 
     // Seed metrics
-    await seedMetrics(urls);
+    const metricsData = await seedMetrics(urls);
+
+    // Seed unique visitors
+    await seedUniqueVisitors(urls, metricsData);
 
     console.log("\n🎉 Seeding completed successfully!");
     console.log(`\n📧 Test user credentials:`);
@@ -390,6 +530,10 @@ async function main() {
     console.log(`   - Hourly metrics for today`);
     console.log(`   - Daily metrics for 7/30/90 day periods`);
     console.log(`   - Realistic traffic patterns and trends`);
+    console.log(`   - Individual unique visitor records with fingerprints`);
+    console.log(
+      `   - Returning visitors with updated last_visit_at timestamps`
+    );
   } catch (error) {
     console.error("❌ Seeding failed:", error);
     process.exit(1);

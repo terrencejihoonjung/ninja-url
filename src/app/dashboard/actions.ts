@@ -19,7 +19,6 @@ export async function signOut() {
 export async function fetchUserUrls(userId: string) {
   try {
     const { data, error } = await getUserUrls(userId);
-    console.log("data", data);
     if (error) {
       console.error("Error fetching user URLs:", error);
       return;

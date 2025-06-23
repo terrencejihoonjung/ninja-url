@@ -42,8 +42,6 @@ export async function getUserUrls(userId: string) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  console.log("urls", urls);
-
   if (error) {
     return { data: null, error };
   }

@@ -41,6 +41,7 @@ interface ChartAreaInteractiveProps {
   title?: string;
   description?: string;
   timeGranularity?: "hourly" | "daily";
+  hideXAxisLabels?: boolean;
   onFilterChange?: (value: string) => void;
   data?: Array<{
     date: string;
@@ -75,6 +76,7 @@ export function ChartAreaInteractive({
   title = "Area Chart - Interactive",
   description = "Showing total visitors for the last 3 months",
   timeGranularity = "daily",
+  hideXAxisLabels = false,
   onFilterChange,
   data: customData,
 }: ChartAreaInteractiveProps) {
@@ -96,7 +98,8 @@ export function ChartAreaInteractive({
     if (!selectedFilter || !chartDataSource.length) return chartDataSource;
 
     // If days is specified in the filter option, use it for filtering
-    if (selectedFilter.days) {
+    // If days is undefined (like for "alltime"), return all data without filtering
+    if (selectedFilter.days !== undefined) {
       const now = new Date();
       const startDate = new Date(now);
       startDate.setDate(startDate.getDate() - selectedFilter.days);
@@ -107,7 +110,7 @@ export function ChartAreaInteractive({
       });
     }
 
-    // Default return if no days specified
+    // Default return if no days specified (for "alltime" and similar cases)
     return chartDataSource;
   }, [chartDataSource, timeRange, filterOptions]);
 
@@ -177,6 +180,8 @@ export function ChartAreaInteractive({
             margin={{
               left: -20,
               right: 12,
+              top: 20,
+              bottom: 5,
             }}
           >
             <defs>
@@ -237,11 +242,17 @@ export function ChartAreaInteractive({
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tick={{
-                fill: ninjaMode ? "rgba(255, 255, 255, 0.7)" : undefined,
-                fontSize: 12,
-              }}
+              tick={
+                hideXAxisLabels
+                  ? false
+                  : {
+                      fill: ninjaMode ? "rgba(255, 255, 255, 0.7)" : undefined,
+                      fontSize: 12,
+                    }
+              }
               tickFormatter={(value) => {
+                if (hideXAxisLabels) return "";
+
                 const date = new Date(value);
                 if (timeGranularity === "hourly") {
                   // Format as "1 AM", "2 PM", etc.
@@ -263,6 +274,7 @@ export function ChartAreaInteractive({
               axisLine={false}
               tickMargin={8}
               tickCount={5}
+              domain={[0, "dataMax"]}
               tick={{
                 fill: ninjaMode ? "rgba(255, 255, 255, 0.7)" : undefined,
                 fontSize: 12,
@@ -278,13 +290,18 @@ export function ChartAreaInteractive({
                 const date = new Date(label);
                 const formattedLabel =
                   timeGranularity === "hourly"
-                    ? date.toLocaleTimeString("en-US", {
+                    ? `${date.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })} at ${date.toLocaleTimeString("en-US", {
                         hour: "numeric",
                         hour12: true,
-                      })
+                      })}`
                     : date.toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
+                        year: "numeric",
                       });
 
                 return (
@@ -313,7 +330,7 @@ export function ChartAreaInteractive({
             />
             <Area
               dataKey="visits"
-              type="natural"
+              type="monotone"
               fill="url(#fillVisits)"
               fillOpacity={0.4}
               stroke={
@@ -323,7 +340,7 @@ export function ChartAreaInteractive({
             />
             <Area
               dataKey="unique_visitors"
-              type="natural"
+              type="monotone"
               fill="url(#fillUniqueVisitors)"
               fillOpacity={0.4}
               stroke={
