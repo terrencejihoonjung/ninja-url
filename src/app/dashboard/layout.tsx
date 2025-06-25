@@ -295,7 +295,7 @@ function DashboardContent({ children }: DashboardLayoutProps) {
                   />
                 </Button>
               </div>
-              <div className="space-y-3 flex-1 overflow-y-auto min-h-0">
+              <div className="space-y-3 flex-1 overflow-y-auto min-h-0 scrollbar-dark pr-2">
                 {userUrls.map((url, index) => (
                   <UrlRow key={`${url.id}-${index}`} url={url} index={index} />
                 ))}
