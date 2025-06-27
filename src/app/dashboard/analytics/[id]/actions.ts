@@ -1,6 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/supabase-server";
+import {
+  getRedisClient,
+  getCacheKey,
+  getCacheTTL,
+} from "@/lib/redis/redis-client";
 
 // Get url by ID
 export async function getUrlById(id: string) {
@@ -22,22 +27,6 @@ export async function getUrlById(id: string) {
 
   if (error) {
     throw new Error("Failed to get url");
-  }
-
-  return data;
-}
-
-// Get url metrics (legacy - keeping for compatibility)
-export async function getUrlMetrics(id: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("url_metric")
-    .select("*")
-    .order("datetime", { ascending: false })
-    .eq("url_id", parseInt(id));
-
-  if (error) {
-    throw new Error("Failed to get url metrics");
   }
 
   return data;
@@ -232,6 +221,20 @@ export async function getUrlAnalytics(id: string, timePeriod: string) {
 
 // Get summary statistics with period comparison
 export async function getUrlSummaryStats(id: string, timePeriod: string) {
+  const redis = getRedisClient();
+  const cacheKey = getCacheKey("summary", id, timePeriod);
+
+  // Try to get from cache first
+  try {
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+      return JSON.parse(cachedData);
+    }
+  } catch (error) {
+    console.warn("Redis cache read error:", error);
+    // Continue with database query if cache fails
+  }
+
   const supabase = await createClient();
   const urlId = parseInt(id);
 
@@ -477,7 +480,7 @@ export async function getUrlSummaryStats(id: string, timePeriod: string) {
     );
   }
 
-  return {
+  const summaryStats = {
     totalVisits: currentTotalVisits,
     uniqueVisitors: currentUniqueVisitors,
     returningVisitors: currentReturningVisitors,
@@ -485,6 +488,17 @@ export async function getUrlSummaryStats(id: string, timePeriod: string) {
     uniqueVisitorsChange,
     returningVisitorsChange,
   };
+
+  // Cache the results with appropriate TTL
+  try {
+    const ttl = getCacheTTL(timePeriod);
+    await redis.setex(cacheKey, ttl, JSON.stringify(summaryStats));
+  } catch (error) {
+    console.warn("Redis cache write error:", error);
+    // Continue without caching if Redis fails
+  }
+
+  return summaryStats;
 }
 
 // Delete url (cascades to metrics)
