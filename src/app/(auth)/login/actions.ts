@@ -41,18 +41,32 @@ export async function login(
 export async function loginWithGoogle() {
   const supabase = await createClient();
 
+  const redirectUrl = `${
+    process.env.NODE_ENV === "production"
+      ? process.env.NEXT_PUBLIC_SITE_URL
+      : "http://localhost:3000"
+  }/auth/callback`;
+
+  console.log("🔐 OAuth Debug:", {
+    NODE_ENV: process.env.NODE_ENV,
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    redirectUrl,
+  });
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      redirectTo: redirectUrl,
     },
   });
 
   if (error) {
+    console.error("❌ OAuth error:", error);
     redirect("/error");
   }
 
   if (data.url) {
+    console.log("🚀 Redirecting to:", data.url);
     redirect(data.url);
   }
 }
