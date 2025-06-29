@@ -47,21 +47,31 @@ export function UrlProvider({ children }: UrlProviderProps) {
   // Get user on mount
   useEffect(() => {
     const getUser = async () => {
+      console.log("🔐 Starting user fetch...");
       try {
         const supabase = createClient();
+        console.log("🔐 Supabase client created");
+
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
+        console.log("🔐 User fetch result:", user ? "User found" : "No user");
+
         if (user && user.id) {
+          console.log("🔐 User ID:", user.id);
           setUser(user);
-          // Fetch user URLs after getting user
+
+          console.log("📚 Starting URLs fetch...");
           const urls = await fetchUserUrls(user.id);
+          console.log("📚 URLs fetch result:", urls);
+
           setUserUrls(urls || []);
         }
       } catch (error) {
-        console.error("Error fetching user:", error);
+        console.error("❌ Error in user fetch:", error);
       } finally {
+        console.log("✅ Setting isLoadingUser to false");
         setIsLoadingUser(false);
       }
     };
