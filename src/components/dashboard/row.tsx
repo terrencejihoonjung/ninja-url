@@ -14,9 +14,7 @@ const truncateUrl = (url: string, maxLength: number = 50): string => {
 };
 
 const getFullShortUrl = (shortUrl: string): string => {
-  return process.env.NODE_ENV === "production"
-    ? `${process.env.NEXT_PUBLIC_SITE_URL}/${shortUrl}`
-    : `http://localhost:3000/${shortUrl}`;
+  return `${process.env.NEXT_PUBLIC_SITE_URL}/${shortUrl}`;
 };
 
 export const UrlRow = ({ url, index }: { url: UserUrl; index: number }) => {

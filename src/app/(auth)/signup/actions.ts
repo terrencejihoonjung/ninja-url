@@ -54,11 +54,7 @@ export async function signupWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${
-        process.env.NODE_ENV === "production"
-          ? process.env.NEXT_PUBLIC_SITE_URL
-          : "http://localhost:3000"
-      }/auth/callback`,
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
     },
   });
 
