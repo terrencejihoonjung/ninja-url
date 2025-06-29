@@ -39,6 +39,13 @@ interface UrlProviderProps {
 }
 
 export function UrlProvider({ children }: UrlProviderProps) {
+  console.log("🚀 UrlProvider component is mounting!");
+  console.log("🌍 Environment check:", {
+    hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    nodeEnv: process.env.NODE_ENV,
+  });
+
   const [user, setUser] = useState<User | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [userUrls, setUserUrls] = useState<UserUrl[]>([]);
