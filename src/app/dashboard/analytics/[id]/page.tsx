@@ -74,45 +74,56 @@ export default function AnalyticsPage() {
   const calculateDateRange = (period: string) => {
     const now = new Date(); // User's local time
     let startDate: Date;
+    let endDate: Date;
     let isHourly = false;
 
     switch (period) {
       case "today":
         startDate = new Date(now);
         startDate.setHours(0, 0, 0, 0); // Local midnight
+        endDate = new Date(now); // Use current time for today
         isHourly = true;
         break;
       case "7days":
         startDate = new Date(now);
         startDate.setDate(startDate.getDate() - 7);
         startDate.setHours(0, 0, 0, 0); // Local midnight 7 days ago
+        endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999); // End of today to include full day
         break;
       case "30days":
         startDate = new Date(now);
         startDate.setDate(startDate.getDate() - 30);
         startDate.setHours(0, 0, 0, 0); // Local midnight 30 days ago
+        endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999); // End of today to include full day
         break;
       case "3months":
         startDate = new Date(now);
         startDate.setDate(startDate.getDate() - 90);
         startDate.setHours(0, 0, 0, 0); // Local midnight 90 days ago
+        endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999); // End of today to include full day
         break;
       case "alltime":
-        // For alltime, we'll use null start date and current time as end
+        // For alltime, let the actions find the earliest valid data point
+        endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999);
         return {
           startDate: null,
-          endDate: now.toISOString(),
+          endDate: endDate.toISOString(),
           isHourly: false,
         };
       default:
         startDate = new Date(now);
         startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now); // Use current time for default
         isHourly = true;
     }
 
     return {
       startDate: startDate.toISOString(),
-      endDate: now.toISOString(),
+      endDate: endDate.toISOString(),
       isHourly,
     };
   };
@@ -129,14 +140,14 @@ export default function AnalyticsPage() {
         const [chartResponse, statsResponse] = await Promise.all([
           getUrlAnalytics(
             id as string,
-            startDate || new Date(0).toISOString(), // Use epoch start for alltime
+            startDate, // Pass null for alltime, actions will find earliest valid date
             endDate,
             selectedPeriod,
             timezone
           ),
           getUrlSummaryStats(
             id as string,
-            startDate || new Date(0).toISOString(), // Use epoch start for alltime
+            startDate, // Pass null for alltime, actions will find earliest valid date
             endDate,
             selectedPeriod,
             timezone

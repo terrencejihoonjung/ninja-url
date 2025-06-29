@@ -94,6 +94,12 @@ export function ChartAreaInteractive({
   const chartDataSource = React.useMemo(() => customData ?? [], [customData]);
 
   const filteredData = React.useMemo(() => {
+    // If custom data is provided, use it as-is (it's already filtered server-side)
+    if (customData && customData.length > 0) {
+      return customData;
+    }
+
+    // Only apply client-side filtering for default chart data (when no custom data provided)
     const selectedFilter = filterOptions.find((f) => f.value === timeRange);
     if (!selectedFilter || !chartDataSource.length) return chartDataSource;
 
@@ -112,7 +118,7 @@ export function ChartAreaInteractive({
 
     // Default return if no days specified (for "alltime" and similar cases)
     return chartDataSource;
-  }, [chartDataSource, timeRange, filterOptions]);
+  }, [chartDataSource, timeRange, filterOptions, customData]);
 
   return (
     <Card
@@ -253,15 +259,22 @@ export function ChartAreaInteractive({
               tickFormatter={(value) => {
                 if (hideXAxisLabels) return "";
 
-                const date = new Date(value);
                 if (timeGranularity === "hourly") {
-                  // Format as "1 AM", "2 PM", etc.
+                  // For hourly data, value should be a datetime string
+                  const date = new Date(value);
                   return date.toLocaleTimeString("en-US", {
                     hour: "numeric",
                     hour12: true,
                   });
                 } else {
-                  // Format as "Apr 1", "Apr 2", etc.
+                  // For daily data, value is a date string like "2025-06-29"
+                  // Parse manually to avoid timezone issues
+                  const [year, month, day] = value.split("-");
+                  const date = new Date(
+                    parseInt(year),
+                    parseInt(month) - 1,
+                    parseInt(day)
+                  );
                   return date.toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
@@ -287,22 +300,33 @@ export function ChartAreaInteractive({
                   return null;
                 }
 
-                const date = new Date(label);
-                const formattedLabel =
-                  timeGranularity === "hourly"
-                    ? `${date.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })} at ${date.toLocaleTimeString("en-US", {
-                        hour: "numeric",
-                        hour12: true,
-                      })}`
-                    : date.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      });
+                let formattedLabel;
+                if (timeGranularity === "hourly") {
+                  // For hourly data, label is a datetime string
+                  const date = new Date(label);
+                  formattedLabel = `${date.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })} at ${date.toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    hour12: true,
+                  })}`;
+                } else {
+                  // For daily data, label is a date string like "2025-06-29"
+                  // Parse manually to avoid timezone issues
+                  const [year, month, day] = label.split("-");
+                  const date = new Date(
+                    parseInt(year),
+                    parseInt(month) - 1,
+                    parseInt(day)
+                  );
+                  formattedLabel = date.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  });
+                }
 
                 return (
                   <div

@@ -35,7 +35,7 @@ export async function getUrlById(id: string) {
 // Get comprehensive analytics data with proper grouping and unique visitor counts
 export async function getUrlAnalytics(
   id: string,
-  localStartDate: string, // ISO string in user's local time
+  localStartDate: string | null, // ISO string in user's local time, or null for alltime
   localEndDate: string, // ISO string in user's local time
   timePeriod: string, // "today", "7days" etc for cache keys and granularity
   timezone: string // user's timezone for any server-side calculations
@@ -43,16 +43,49 @@ export async function getUrlAnalytics(
   const supabase = await createClient();
   const urlId = parseInt(id);
 
-  // Convert local dates to UTC for database queries
-  const startDateUTC = localStartDate
-    ? new Date(localStartDate).toISOString()
-    : null;
+  // For "alltime", find the earliest valid data point
+  let actualStartDateUTC: string | null = null;
+  if (timePeriod === "alltime") {
+    // Find the earliest data point from both visits and unique visitors
+    const [{ data: earliestVisit }, { data: earliestUniqueVisitor }] =
+      await Promise.all([
+        supabase
+          .from("url_metric")
+          .select("datetime")
+          .eq("url_id", urlId)
+          .order("datetime", { ascending: true })
+          .limit(1),
+        supabase
+          .from("unique_visitor")
+          .select("first_visit_at")
+          .eq("url_id", urlId)
+          .order("first_visit_at", { ascending: true })
+          .limit(1),
+      ]);
+
+    const earliestVisitDate = earliestVisit?.[0]?.datetime;
+    const earliestUniqueVisitorDate =
+      earliestUniqueVisitor?.[0]?.first_visit_at;
+
+    if (earliestVisitDate || earliestUniqueVisitorDate) {
+      const dates = [earliestVisitDate, earliestUniqueVisitorDate].filter(
+        Boolean
+      ) as string[];
+      actualStartDateUTC = dates.sort()[0]; // Get the earliest date
+    }
+  } else {
+    // Convert local dates to UTC for database queries
+    actualStartDateUTC = localStartDate
+      ? new Date(localStartDate).toISOString()
+      : null;
+  }
+
   const endDateUTC = new Date(localEndDate).toISOString();
 
   // Determine granularity based on time period
   const isHourly = timePeriod === "today";
 
-  // Parse local dates for processing logic
+  // Parse input dates
   const localStart = localStartDate ? new Date(localStartDate) : null;
   const localEnd = new Date(localEndDate);
 
@@ -62,8 +95,8 @@ export async function getUrlAnalytics(
     .select("datetime, visits")
     .eq("url_id", urlId);
 
-  if (startDateUTC) {
-    visitsQuery.gte("datetime", startDateUTC);
+  if (actualStartDateUTC) {
+    visitsQuery.gte("datetime", actualStartDateUTC);
   }
   visitsQuery.lte("datetime", endDateUTC);
 
@@ -82,8 +115,8 @@ export async function getUrlAnalytics(
     .select("first_visit_at")
     .eq("url_id", urlId);
 
-  if (startDateUTC) {
-    uniqueVisitorsQuery.gte("first_visit_at", startDateUTC);
+  if (actualStartDateUTC) {
+    uniqueVisitorsQuery.gte("first_visit_at", actualStartDateUTC);
   }
   uniqueVisitorsQuery.lte("first_visit_at", endDateUTC);
 
@@ -115,9 +148,9 @@ export async function getUrlAnalytics(
       }
     }
 
-    // Aggregate visits by hour (convert UTC data back to local timezone for grouping)
+    // Aggregate visits by hour
     visitsData.forEach((metric) => {
-      const metricDate = new Date(metric.datetime); // UTC date from DB
+      const metricDate = new Date(metric.datetime);
       const localMetricDate = new Date(
         metricDate.toLocaleString("en-US", { timeZone: timezone })
       );
@@ -140,7 +173,7 @@ export async function getUrlAnalytics(
 
     // Count unique visitors by hour
     uniqueVisitorsData.forEach((visitor) => {
-      const visitorDate = new Date(visitor.first_visit_at); // UTC date from DB
+      const visitorDate = new Date(visitor.first_visit_at);
       const localVisitorDate = new Date(
         visitorDate.toLocaleString("en-US", { timeZone: timezone })
       );
@@ -178,11 +211,23 @@ export async function getUrlAnalytics(
       { visits: number; unique_visitors: number }
     > = {};
 
-    // Generate all dates in the range (skip for alltime)
-    if (localStart) {
-      const currentDate = new Date(localStart);
-      while (currentDate <= localEnd) {
-        const dateKey = currentDate.toISOString().split("T")[0];
+    // Generate all dates in the range
+    const startDateForRange =
+      localStart || (actualStartDateUTC ? new Date(actualStartDateUTC) : null);
+    if (startDateForRange) {
+      const currentDate = new Date(startDateForRange);
+      const endDate = new Date(localEnd);
+
+      // Normalize to compare only dates, not times
+      currentDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+
+      while (currentDate <= endDate) {
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+        const day = String(currentDate.getDate()).padStart(2, "0");
+        const dateKey = `${year}-${month}-${day}`;
+
         dailyData[dateKey] = { visits: 0, unique_visitors: 0 };
         currentDate.setDate(currentDate.getDate() + 1);
       }
@@ -190,7 +235,16 @@ export async function getUrlAnalytics(
 
     // Aggregate visits by date
     visitsData.forEach((metric) => {
-      const dateKey = new Date(metric.datetime).toISOString().split("T")[0];
+      const metricDate = new Date(metric.datetime);
+      const userTimezoneDate = new Date(
+        metricDate.toLocaleString("en-US", { timeZone: timezone })
+      );
+
+      const year = userTimezoneDate.getFullYear();
+      const month = String(userTimezoneDate.getMonth() + 1).padStart(2, "0");
+      const day = String(userTimezoneDate.getDate()).padStart(2, "0");
+      const dateKey = `${year}-${month}-${day}`;
+
       if (!dailyData[dateKey]) {
         dailyData[dateKey] = { visits: 0, unique_visitors: 0 };
       }
@@ -199,9 +253,16 @@ export async function getUrlAnalytics(
 
     // Count unique visitors by date
     uniqueVisitorsData.forEach((visitor) => {
-      const dateKey = new Date(visitor.first_visit_at)
-        .toISOString()
-        .split("T")[0];
+      const visitorDate = new Date(visitor.first_visit_at);
+      const userTimezoneDate = new Date(
+        visitorDate.toLocaleString("en-US", { timeZone: timezone })
+      );
+
+      const year = userTimezoneDate.getFullYear();
+      const month = String(userTimezoneDate.getMonth() + 1).padStart(2, "0");
+      const day = String(userTimezoneDate.getDate()).padStart(2, "0");
+      const dateKey = `${year}-${month}-${day}`;
+
       if (!dailyData[dateKey]) {
         dailyData[dateKey] = { visits: 0, unique_visitors: 0 };
       }
@@ -224,13 +285,11 @@ export async function getUrlAnalytics(
 // Get summary statistics with period comparison
 export async function getUrlSummaryStats(
   id: string,
-  localStartDate: string, // ISO string in user's local time
+  localStartDate: string | null, // ISO string in user's local time, or null for alltime
   localEndDate: string, // ISO string in user's local time
   timePeriod: string, // "today", "7days" etc for cache keys
   _timezone: string // user's timezone (unused in summary stats)
 ) {
-  // Note: timezone is not used in summary stats since we only do database queries
-  // but kept for API consistency with getUrlAnalytics
   void _timezone;
 
   const redis = getRedisClient();
