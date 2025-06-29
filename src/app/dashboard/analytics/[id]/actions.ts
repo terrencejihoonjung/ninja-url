@@ -227,7 +227,7 @@ export async function getUrlSummaryStats(id: string, timePeriod: string) {
   // Try to get from cache first
   try {
     const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
+    if (cachedData && typeof cachedData === "string") {
       return JSON.parse(cachedData);
     }
   } catch (error) {
