@@ -189,33 +189,34 @@ function DashboardContent({ children }: DashboardLayoutProps) {
   return (
     <div className="relative h-screen bg-foreground w-full overflow-hidden">
       {/* Navbar */}
-      <nav className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-12 md:px-24 lg:px-12 py-4 bg-black/10 backdrop-blur-sm">
+      <nav className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 py-4 bg-black/10 backdrop-blur-sm">
         <div className="flex items-center space-x-2">
           <span className="text-2xl">🥷</span>
-          <span className="text-xl font-bold text-white">ninja-url</span>
+          <span className="text-lg sm:text-xl font-bold text-white">ninja-url</span>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <span className="text-white">{username}</span>
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <span className="text-white text-sm sm:text-base truncate max-w-[120px] sm:max-w-none">{username}</span>
           <form action={signOut}>
             <Button
               type="submit"
               variant="outline"
               size="sm"
-              className="bg-white/10 border-white/20 text-white hover:bg-white/90 backdrop-blur-sm"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/90 backdrop-blur-sm text-xs sm:text-sm"
             >
-              Sign Out
+              <span className="hidden sm:inline">Sign Out</span>
+              <span className="sm:hidden">Out</span>
             </Button>
           </form>
         </div>
       </nav>
 
-      {/* Main content - Two panel layout */}
-      <div className="relative z-0 flex h-full bg-foreground pt-20 pb-4 px-12 md:px-24 lg:px-12 gap-6 overflow-hidden">
+      {/* Main content - Responsive layout */}
+      <div className="relative z-0 flex flex-col lg:flex-row h-full bg-foreground pt-16 sm:pt-20 pb-4 px-4 sm:px-6 md:px-8 lg:px-12 gap-4 sm:gap-6 lg:gap-6 overflow-hidden">
         {/* Left Panel - URLs Management */}
-        <div className="flex flex-col w-1/3 min-h-0">
+        <div className="flex flex-col w-full lg:w-2/5 xl:w-1/3 min-h-0 lg:min-h-full">
           {/* Input and Button Section */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-6 h-12 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row gap-3 mb-4 sm:mb-6 h-auto sm:h-12 flex-shrink-0">
             <Input
               type="url"
               placeholder="Paste your long URL here..."
@@ -227,19 +228,19 @@ function DashboardContent({ children }: DashboardLayoutProps) {
                   setIsErrorFading(false); // Reset animation state
                 }
               }}
-              className="h-full rounded-xl bg-background border-none"
+              className="h-12 rounded-xl bg-background border-none text-sm sm:text-base"
             />
             <Button
               onClick={handleShorten}
               type="submit"
               variant="outline"
               disabled={isLoading}
-              className="h-full text-md rounded-xl w-[120px] flex items-center justify-center"
+              className="h-12 text-sm sm:text-md rounded-xl w-full sm:w-[120px] flex items-center justify-center"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                "⚔️ Shorten"
+                <span>⚔️ Shorten</span>
               )}
             </Button>
           </div>
@@ -247,7 +248,7 @@ function DashboardContent({ children }: DashboardLayoutProps) {
           {/* Error Message */}
           {(error || isErrorFading) && (
             <div
-              className={`mb-6 flex-shrink-0 transition-all duration-300 ease-out ${
+              className={`mb-4 sm:mb-6 flex-shrink-0 transition-all duration-300 ease-out ${
                 isErrorFading
                   ? "opacity-0 -translate-y-2"
                   : "opacity-100 translate-y-0"
@@ -262,7 +263,7 @@ function DashboardContent({ children }: DashboardLayoutProps) {
           {/* Warning Message */}
           {(warning || isWarningFading) && (
             <div
-              className={`mb-6 flex-shrink-0 transition-all duration-300 ease-out ${
+              className={`mb-4 sm:mb-6 flex-shrink-0 transition-all duration-300 ease-out ${
                 isWarningFading
                   ? "opacity-0 -translate-y-2"
                   : "opacity-100 translate-y-0"
@@ -275,10 +276,10 @@ function DashboardContent({ children }: DashboardLayoutProps) {
           )}
 
           {/* URLs List */}
-          <Card className="flex-1 bg-white/5 backdrop-blur border-white/10 overflow-hidden min-h-0">
-            <div className="px-6 h-full flex flex-col">
-              <div className="flex justify-between items-center mb-4 flex-shrink-0">
-                <h3 className="text-white text-xl font-semibold">Your Links</h3>
+          <Card className="flex-1 bg-white/5 backdrop-blur border-white/10 overflow-hidden min-h-0 lg:min-h-[400px]">
+            <div className="px-4 sm:px-6 h-full flex flex-col">
+              <div className="flex justify-between items-center mb-4 flex-shrink-0 py-4 sm:py-0">
+                <h3 className="text-white text-lg sm:text-xl font-semibold">Your Links</h3>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -289,7 +290,7 @@ function DashboardContent({ children }: DashboardLayoutProps) {
                       setError("Failed to refresh URLs. Please try again.");
                     }
                   }}
-                  className="text-white/70 hover:bg-white/10 hover:text-white"
+                  className="text-white/70 hover:bg-white/10 hover:text-white w-8 h-8 sm:w-10 sm:h-10"
                 >
                   <RefreshCcwIcon
                     className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
@@ -301,8 +302,8 @@ function DashboardContent({ children }: DashboardLayoutProps) {
                   <UrlRow key={`${url.id}-${index}`} url={url} index={index} />
                 ))}
                 {userUrls.length === 0 && (
-                  <div className="text-center py-12">
-                    <p className="text-white/60">
+                  <div className="text-center py-8 sm:py-12">
+                    <p className="text-white/60 text-sm sm:text-base">
                       No URLs created yet. Start by shortening your first link!
                     </p>
                   </div>
@@ -313,7 +314,7 @@ function DashboardContent({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Right Panel - Content from children */}
-        <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+        <div className="flex-1 min-h-0 lg:min-h-full overflow-hidden mt-4 lg:mt-0">{children}</div>
       </div>
     </div>
   );

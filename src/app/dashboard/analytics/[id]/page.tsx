@@ -115,30 +115,30 @@ export default function AnalyticsPage() {
     <Suspense fallback={<Loading />}>
       <div className="flex flex-col gap-6 w-full">
         {/* Header Section */}
-        <div className="p-6 border-b border-white/10 bg-white/5 backdrop-blur rounded-xl">
-          <div className="flex items-center justify-between">
-            <h1 className="text-white text-xl font-semibold truncate mr-4">
+        <div className="p-4 sm:p-6 border-b border-white/10 bg-white/5 backdrop-blur rounded-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
+            <h1 className="text-white text-lg sm:text-xl font-semibold truncate mr-0 sm:mr-4">
               {url?.long_url}
             </h1>
-            <div className="flex gap-2">
+            <div className="flex gap-2 self-end sm:self-auto">
               <Button
                 size="icon"
                 variant="outline"
                 onClick={handleGoTo}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/90 hover:text-black"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/90 hover:text-black h-8 w-8 sm:h-10 sm:w-10"
                 title="Go to URL"
               >
-                <ExternalLink className="h-4 w-4" />
+                <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                   <Button
                     size="icon"
                     variant="outline"
-                    className="bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/90 hover:text-white"
+                    className="bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/90 hover:text-white h-8 w-8 sm:h-10 sm:w-10"
                     title="Delete URL"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl">
@@ -194,34 +194,34 @@ export default function AnalyticsPage() {
 
         {/* Key Metrics */}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Total Visits */}
           <Card className="relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 hover:border-white/30 transition-all duration-300 group overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <CardContent className="px-6 py-4 relative z-10">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-blue-500/20 rounded-xl">
-                  <Eye className="h-6 w-6 text-blue-400" />
+            <CardContent className="px-4 sm:px-6 py-4 relative z-10">
+              <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-blue-500/20 rounded-xl">
+                  <Eye className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-white/70 text-sm font-medium uppercase tracking-wide">
+                  <p className="text-white/70 text-xs sm:text-sm font-medium uppercase tracking-wide">
                     Total Visits
                   </p>
                 </div>
               </div>
               <div className="space-y-2">
-                <p className="text-4xl font-bold text-white">
+                <p className="text-3xl sm:text-4xl font-bold text-white">
                   {summaryStats.totalVisits.toLocaleString()}
                 </p>
                 {selectedPeriod !== "alltime" && (
                   <div className="flex items-center gap-2">
                     {summaryStats.totalVisitsChange >= 0 ? (
-                      <TrendingUp className="h-4 w-4 text-green-400" />
+                      <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-400" />
                     ) : (
-                      <TrendingDown className="h-4 w-4 text-red-400" />
+                      <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-400" />
                     )}
                     <span
-                      className={`text-sm font-medium ${
+                      className={`text-xs sm:text-sm font-medium ${
                         summaryStats.totalVisitsChange >= 0
                           ? "text-green-400"
                           : "text-red-400"
@@ -239,30 +239,30 @@ export default function AnalyticsPage() {
           {/* Unique Visitors */}
           <Card className="relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 hover:border-white/30 transition-all duration-300 group overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <CardContent className="px-6 py-4 relative z-10">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-purple-500/20 rounded-xl">
-                  <Users className="h-6 w-6 text-purple-400" />
+            <CardContent className="px-4 sm:px-6 py-4 relative z-10">
+              <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-purple-500/20 rounded-xl">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-white/70 text-sm font-medium uppercase tracking-wide">
+                  <p className="text-white/70 text-xs sm:text-sm font-medium uppercase tracking-wide">
                     Unique Visitors
                   </p>
                 </div>
               </div>
               <div className="space-y-2">
-                <p className="text-4xl font-bold text-white">
+                <p className="text-3xl sm:text-4xl font-bold text-white">
                   {summaryStats.uniqueVisitors.toLocaleString()}
                 </p>
                 {selectedPeriod !== "alltime" && (
                   <div className="flex items-center gap-2">
                     {summaryStats.uniqueVisitorsChange >= 0 ? (
-                      <TrendingUp className="h-4 w-4 text-green-400" />
+                      <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-400" />
                     ) : (
-                      <TrendingDown className="h-4 w-4 text-red-400" />
+                      <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-400" />
                     )}
                     <span
-                      className={`text-sm font-medium ${
+                      className={`text-xs sm:text-sm font-medium ${
                         summaryStats.uniqueVisitorsChange >= 0
                           ? "text-green-400"
                           : "text-red-400"
@@ -278,32 +278,32 @@ export default function AnalyticsPage() {
           </Card>
 
           {/* Returning Visitors */}
-          <Card className="relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 hover:border-white/30 transition-all duration-300 group overflow-hidden">
+          <Card className="relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 hover:border-white/30 transition-all duration-300 group overflow-hidden sm:col-span-2 lg:col-span-1">
             <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <CardContent className="px-6 py-4 relative z-10">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-green-500/20 rounded-xl">
-                  <Users className="h-6 w-6 text-green-400" />
+            <CardContent className="px-4 sm:px-6 py-4 relative z-10">
+              <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-green-500/20 rounded-xl">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" />
                 </div>
                 <div>
-                  <p className="text-white/70 text-sm font-medium uppercase tracking-wide">
+                  <p className="text-white/70 text-xs sm:text-sm font-medium uppercase tracking-wide">
                     Returning Visitors
                   </p>
                 </div>
               </div>
               <div className="space-y-2">
-                <p className="text-4xl font-bold text-white">
+                <p className="text-3xl sm:text-4xl font-bold text-white">
                   {summaryStats.returningVisitors.toLocaleString()}
                 </p>
                 {selectedPeriod !== "alltime" && (
                   <div className="flex items-center gap-2">
                     {summaryStats.returningVisitorsChange >= 0 ? (
-                      <TrendingUp className="h-4 w-4 text-green-400" />
+                      <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-400" />
                     ) : (
-                      <TrendingDown className="h-4 w-4 text-red-400" />
+                      <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-400" />
                     )}
                     <span
-                      className={`text-sm font-medium ${
+                      className={`text-xs sm:text-sm font-medium ${
                         summaryStats.returningVisitorsChange >= 0
                           ? "text-green-400"
                           : "text-red-400"
