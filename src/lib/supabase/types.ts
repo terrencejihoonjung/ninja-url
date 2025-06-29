@@ -18,9 +18,9 @@ export type Database = {
       graphql: {
         Args: {
           extensions?: Json
+          variables?: Json
           operationName?: string
           query?: string
-          variables?: Json
         }
         Returns: Json
       }

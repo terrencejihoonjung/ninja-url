@@ -7,8 +7,9 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { signOut } from "@/app/dashboard/actions";
 import { UrlRow } from "@/components/dashboard/row";
-import { RefreshCcwIcon } from "lucide-react";
+import { RefreshCcwIcon, Trash2 } from "lucide-react";
 import { UrlProvider, useUrls } from "@/contexts/url-context";
+import { toast } from "sonner";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -26,6 +27,7 @@ function DashboardContent({ children }: DashboardLayoutProps) {
   const [warning, setWarning] = useState("");
   const [isErrorFading, setIsErrorFading] = useState(false);
   const [isWarningFading, setIsWarningFading] = useState(false);
+  const [isClearingCache, setIsClearingCache] = useState(false);
 
   // Refs to store timeout IDs for cleanup
   const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -109,6 +111,37 @@ function DashboardContent({ children }: DashboardLayoutProps) {
         setIsWarningFading(false); // Reset for next message
       }, 300); // Wait for animation to complete
     }, 4700); // 4.7s visible + 0.3s fade-out = 5s total
+  };
+
+  const handleClearCache = async () => {
+    if (isClearingCache) return;
+
+    setIsClearingCache(true);
+    try {
+      const response = await axios.post("/cache/clear");
+
+      const data = response.data;
+
+      toast.success(
+        `Cache cleared successfully for ${data.clearedUrls} URLs!`,
+        {
+          position: "top-center",
+          duration: 3000,
+        }
+      );
+    } catch (error) {
+      console.error("Failed to clear cache:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to clear cache. Please try again.";
+      toast.error(errorMessage, {
+        position: "top-center",
+        duration: 3000,
+      });
+    } finally {
+      setIsClearingCache(false);
+    }
   };
 
   const handleShorten = async (e: React.FormEvent<HTMLButtonElement>) => {
@@ -200,6 +233,24 @@ function DashboardContent({ children }: DashboardLayoutProps) {
           <span className="text-white text-sm sm:text-base truncate max-w-[120px] sm:max-w-none">
             {username}
           </span>
+          <Button
+            onClick={handleClearCache}
+            disabled={isClearingCache}
+            variant="outline"
+            size="sm"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/90 backdrop-blur-sm text-xs sm:text-sm"
+            title="Clear Cache"
+          >
+            {isClearingCache ? (
+              <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Clear Cache</span>
+                <span className="sm:hidden">Clear</span>
+              </>
+            )}
+          </Button>
           <form action={signOut}>
             <Button
               type="submit"

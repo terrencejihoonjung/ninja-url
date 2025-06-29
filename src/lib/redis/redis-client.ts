@@ -58,7 +58,7 @@ export async function invalidateUrlCache(urlId: string): Promise<void> {
     if (keysToDelete.length > 0) {
       await redis.del(...keysToDelete);
       console.log(
-        `Invalidated cache for URL ${urlId}: ${keysToDelete.length} keys`
+        `Invalidated cache for URL ${urlId}: ${keysToDelete.length} keys targeted`
       );
     }
   } catch (error) {

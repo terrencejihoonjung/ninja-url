@@ -7,6 +7,15 @@ import {
   getCacheTTL,
 } from "@/lib/redis/redis-client";
 
+type SummaryStats = {
+  totalVisits: number;
+  uniqueVisitors: number;
+  returningVisitors: number;
+  totalVisitsChange: number;
+  uniqueVisitorsChange: number;
+  returningVisitorsChange: number;
+};
+
 // Get url by ID
 export async function getUrlById(id: string) {
   const supabase = await createClient();
@@ -298,8 +307,8 @@ export async function getUrlSummaryStats(
   // Try to get from cache first
   try {
     const cachedData = await redis.get(cacheKey);
-    if (cachedData && typeof cachedData === "string") {
-      return JSON.parse(cachedData);
+    if (cachedData && cachedData instanceof Object) {
+      return cachedData as SummaryStats;
     }
   } catch (error) {
     console.warn("Redis cache read error:", error);

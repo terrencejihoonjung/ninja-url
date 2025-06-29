@@ -128,38 +128,40 @@ export default function AnalyticsPage() {
     };
   };
 
+  const fetchData = async () => {
+    if (!url) return; // Only fetch data if we have the URL from context
+
+    try {
+      const { startDate, endDate } = calculateDateRange(selectedPeriod);
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      // Fetch chart data and summary stats in parallel with new parameters
+      const [chartResponse, statsResponse] = await Promise.all([
+        getUrlAnalytics(
+          id as string,
+          startDate, // Pass null for alltime, actions will find earliest valid date
+          endDate,
+          selectedPeriod,
+          timezone
+        ),
+        getUrlSummaryStats(
+          id as string,
+          startDate, // Pass null for alltime, actions will find earliest valid date
+          endDate,
+          selectedPeriod,
+          timezone
+        ),
+      ]);
+
+      setChartData(chartResponse);
+      setSummaryStats(statsResponse);
+    } catch (error) {
+      console.error("Failed to fetch analytics data:", error);
+    }
+  };
+
+  // Effect for initial load and period changes
   useEffect(() => {
-    const fetchData = async () => {
-      if (!url) return; // Only fetch data if we have the URL from context
-
-      try {
-        const { startDate, endDate } = calculateDateRange(selectedPeriod);
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-        // Fetch chart data and summary stats in parallel with new parameters
-        const [chartResponse, statsResponse] = await Promise.all([
-          getUrlAnalytics(
-            id as string,
-            startDate, // Pass null for alltime, actions will find earliest valid date
-            endDate,
-            selectedPeriod,
-            timezone
-          ),
-          getUrlSummaryStats(
-            id as string,
-            startDate, // Pass null for alltime, actions will find earliest valid date
-            endDate,
-            selectedPeriod,
-            timezone
-          ),
-        ]);
-
-        setChartData(chartResponse);
-        setSummaryStats(statsResponse);
-      } catch (error) {
-        console.error("Failed to fetch analytics data:", error);
-      }
-    };
     fetchData();
   }, [id, url, selectedPeriod]);
 
