@@ -35,11 +35,11 @@ export const UrlRow = ({ url, index }: { url: UserUrl; index: number }) => {
   return (
     <Link
       href={targetUrl}
-      className={`flex items-center justify-between p-4 bg-white/5 backdrop-blur rounded-lg border border-white/10 hover:bg-white/10 transition-all duration-500 ease-out ${
+      className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-white/5 backdrop-blur rounded-lg border border-white/10 hover:bg-white/10 transition-all duration-500 ease-out ${
         index === 0 ? "animate-in slide-in-from-top-2 fade-in" : ""
       }`}
     >
-      <div className="flex-1 min-w-0 mr-4">
+      <div className="flex-1 min-w-0 mb-2 sm:mb-0 sm:mr-4">
         <p
           className={`text-sm font-medium block truncate transition-colors duration-200 ${
             isActive ? "text-orange-400" : "text-white hover:text-orange-400"
@@ -50,47 +50,49 @@ export const UrlRow = ({ url, index }: { url: UserUrl; index: number }) => {
         </p>
       </div>
 
-      <div className="text-white/70 text-sm mr-4 font-mono">
-        {url.visits || 0} visits
-      </div>
+      <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
+        <div className="text-white/70 text-xs sm:text-sm font-mono">
+          {url.visits || 0} visits
+        </div>
 
-      <Button
-        type="button"
-        onClick={handleCopy}
-        variant="outline"
-        size="sm"
-        className="shrink-0 bg-white/10 border-white/20 text-white hover:bg-white/90 hover:text-black transition-all duration-200"
-      >
-        {copied ? (
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        ) : (
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-            />
-          </svg>
-        )}
-      </Button>
+        <Button
+          type="button"
+          onClick={handleCopy}
+          variant="outline"
+          size="sm"
+          className="shrink-0 bg-white/10 border-white/20 text-white hover:bg-white/90 hover:text-black transition-all duration-200 h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm min-w-[44px] sm:min-w-[auto]"
+        >
+          {copied ? (
+            <svg
+              className="w-3 h-3 sm:w-4 sm:h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          ) : (
+            <svg
+              className="w-3 h-3 sm:w-4 sm:h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 002 2v8a2 2 0 002 2z"
+              />
+            </svg>
+          )}
+        </Button>
+      </div>
     </Link>
   );
 };

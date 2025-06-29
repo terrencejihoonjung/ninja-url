@@ -33,7 +33,7 @@ export function SignupForm({
                 <span className="text-2xl">🥷</span>
               </div>
             </Link>
-            <h1 className="text-xl font-bold">Join ninja-url</h1>
+            <h1 className="text-lg sm:text-xl font-bold">Join ninja-url</h1>
             <div className="text-center text-sm">
               Already have an account?{" "}
               <Link
