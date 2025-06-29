@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { checkRateLimit, getRateLimitType, getClientIP } from "../rate-limit";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -40,16 +41,62 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    // Check if the current path should be publicly accessible
-    const pathname = request.nextUrl.pathname;
+  // Rate limiting check
+  const pathname = request.nextUrl.pathname;
+  const method = request.method;
+  const rateLimitType = getRateLimitType(pathname, method);
 
+  if (rateLimitType) {
+    const ip = getClientIP(request);
+    const userId = user?.id || null;
+    const rateLimitResult = await checkRateLimit(userId, ip, rateLimitType);
+
+    if (!rateLimitResult.allowed) {
+      const waitTime = Math.ceil(
+        (rateLimitResult.resetTime - Date.now()) / 1000
+      );
+
+      // Return 429 for ALL requests - rate limiting is a hard stop
+      return new NextResponse(
+        JSON.stringify({
+          error: "Rate limit exceeded",
+          message: `Too many requests. Try again in ${waitTime} seconds.`,
+          retryAfter: waitTime,
+        }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "X-RateLimit-Limit": rateLimitResult.limit.toString(),
+            "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+            "X-RateLimit-Reset": rateLimitResult.resetTime.toString(),
+            "Retry-After": waitTime.toString(),
+          },
+        }
+      );
+    }
+
+    // Add rate limit headers to successful responses
+    supabaseResponse.headers.set(
+      "X-RateLimit-Limit",
+      rateLimitResult.limit.toString()
+    );
+    supabaseResponse.headers.set(
+      "X-RateLimit-Remaining",
+      rateLimitResult.remaining.toString()
+    );
+    supabaseResponse.headers.set(
+      "X-RateLimit-Reset",
+      rateLimitResult.resetTime.toString()
+    );
+  }
+
+  if (!user) {
     // Allow public access to these routes
     const isPublicRoute =
       pathname === "/" || // Home page (conditional rendering)
       pathname === "/login" || // Login page
       pathname === "/signup" || // Signup page
-      pathname === "/error" || // Error page
       pathname === "/auth/callback" || // OAuth callback route
       /^\/[a-z0-9]{6}$/.test(pathname); // Short URLs (e.g., /abc123)
 

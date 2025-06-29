@@ -17,8 +17,8 @@
     "db:push:prod": "pnpm run db:link:prod && supabase db push",
     "db:setup": "supabase stop --no-backup && source ./supabase/.env && supabase start && supabase db reset && pnpm run seed && pnpm run db:generate:local",
     "db:restart": "supabase stop --no-backup && source ./supabase/.env && supabase start",
-    "dev:start": "pnpm run db:setup && docker compose up -d",
-    "dev:stop": "supabase stop && docker compose down"
+    "dev:start": "pnpm run db:setup && pnpm run dev",
+    "dev:stop": "supabase stop"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",
@@ -28,12 +28,11 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.0",
-    "@types/ioredis": "^5.0.0",
+    "@upstash/redis": "^1.35.0",
     "axios": "^1.9.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "ioredis": "^5.6.1",
     "lucide-react": "^0.512.0",
     "next": "15.3.3",
     "react": "^19.0.0",
