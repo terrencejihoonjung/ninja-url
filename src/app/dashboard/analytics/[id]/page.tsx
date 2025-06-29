@@ -70,15 +70,77 @@ export default function AnalyticsPage() {
   // Get the current URL from context instead of API call
   const url = userUrls.find((u) => u.id === parseInt(id as string)) || null;
 
+  // Calculate local date ranges based on selected period
+  const calculateDateRange = (period: string) => {
+    const now = new Date(); // User's local time
+    let startDate: Date;
+    let isHourly = false;
+
+    switch (period) {
+      case "today":
+        startDate = new Date(now);
+        startDate.setHours(0, 0, 0, 0); // Local midnight
+        isHourly = true;
+        break;
+      case "7days":
+        startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - 7);
+        startDate.setHours(0, 0, 0, 0); // Local midnight 7 days ago
+        break;
+      case "30days":
+        startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - 30);
+        startDate.setHours(0, 0, 0, 0); // Local midnight 30 days ago
+        break;
+      case "3months":
+        startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - 90);
+        startDate.setHours(0, 0, 0, 0); // Local midnight 90 days ago
+        break;
+      case "alltime":
+        // For alltime, we'll use null start date and current time as end
+        return {
+          startDate: null,
+          endDate: now.toISOString(),
+          isHourly: false,
+        };
+      default:
+        startDate = new Date(now);
+        startDate.setHours(0, 0, 0, 0);
+        isHourly = true;
+    }
+
+    return {
+      startDate: startDate.toISOString(),
+      endDate: now.toISOString(),
+      isHourly,
+    };
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (!url) return; // Only fetch data if we have the URL from context
 
       try {
-        // Fetch chart data and summary stats in parallel
+        const { startDate, endDate } = calculateDateRange(selectedPeriod);
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        // Fetch chart data and summary stats in parallel with new parameters
         const [chartResponse, statsResponse] = await Promise.all([
-          getUrlAnalytics(id as string, selectedPeriod),
-          getUrlSummaryStats(id as string, selectedPeriod),
+          getUrlAnalytics(
+            id as string,
+            startDate || new Date(0).toISOString(), // Use epoch start for alltime
+            endDate,
+            selectedPeriod,
+            timezone
+          ),
+          getUrlSummaryStats(
+            id as string,
+            startDate || new Date(0).toISOString(), // Use epoch start for alltime
+            endDate,
+            selectedPeriod,
+            timezone
+          ),
         ]);
 
         setChartData(chartResponse);
@@ -328,7 +390,9 @@ export default function AnalyticsPage() {
             title="URL Analytics"
             description="Track visits to your shortened URL over time"
             data={chartData}
-            timeGranularity={selectedPeriod === "today" ? "hourly" : "daily"}
+            timeGranularity={
+              calculateDateRange(selectedPeriod).isHourly ? "hourly" : "daily"
+            }
             hideXAxisLabels={selectedPeriod === "alltime"}
             onFilterChange={setSelectedPeriod}
           />

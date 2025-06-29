@@ -135,11 +135,6 @@ export async function checkRateLimit(
   const now = Date.now();
   const windowStart = now - config.window;
 
-  // Debug logging
-  console.log(
-    `Rate limit check: ${key}, limit: ${config.requests}, window: ${config.window}ms`
-  );
-
   try {
     return await checkRateLimitRedis(key, config, now, windowStart);
   } catch (error) {

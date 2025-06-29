@@ -39,13 +39,6 @@ interface UrlProviderProps {
 }
 
 export function UrlProvider({ children }: UrlProviderProps) {
-  console.log("🚀 UrlProvider component is mounting!");
-  console.log("🌍 Environment check:", {
-    hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-    hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    nodeEnv: process.env.NODE_ENV,
-  });
-
   const [user, setUser] = useState<User | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [userUrls, setUserUrls] = useState<UserUrl[]>([]);
@@ -54,31 +47,23 @@ export function UrlProvider({ children }: UrlProviderProps) {
   // Get user on mount
   useEffect(() => {
     const getUser = async () => {
-      console.log("🔐 Starting user fetch...");
       try {
         const supabase = createClient();
-        console.log("🔐 Supabase client created");
 
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
-        console.log("🔐 User fetch result:", user ? "User found" : "No user");
-
         if (user && user.id) {
-          console.log("🔐 User ID:", user.id);
           setUser(user);
 
-          console.log("📚 Starting URLs fetch...");
           const urls = await fetchUserUrls(user.id);
-          console.log("📚 URLs fetch result:", urls);
 
           setUserUrls(urls || []);
         }
       } catch (error) {
         console.error("❌ Error in user fetch:", error);
       } finally {
-        console.log("✅ Setting isLoadingUser to false");
         setIsLoadingUser(false);
       }
     };

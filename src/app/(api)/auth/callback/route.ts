@@ -19,7 +19,6 @@ export async function GET(request: Request) {
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
       const finalRedirect = `${baseUrl}${next}`;
-      console.log("🚀 Final callback redirect:", finalRedirect);
       return NextResponse.redirect(finalRedirect);
     }
   }

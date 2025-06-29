@@ -33,45 +33,28 @@ export async function getUrlById(id: string) {
 }
 
 // Get comprehensive analytics data with proper grouping and unique visitor counts
-export async function getUrlAnalytics(id: string, timePeriod: string) {
+export async function getUrlAnalytics(
+  id: string,
+  localStartDate: string, // ISO string in user's local time
+  localEndDate: string, // ISO string in user's local time
+  timePeriod: string, // "today", "7days" etc for cache keys and granularity
+  timezone: string // user's timezone for any server-side calculations
+) {
   const supabase = await createClient();
   const urlId = parseInt(id);
 
-  // Determine date range based on time period
-  const now = new Date();
-  let startDate: Date | null;
-  let isHourly = false;
+  // Convert local dates to UTC for database queries
+  const startDateUTC = localStartDate
+    ? new Date(localStartDate).toISOString()
+    : null;
+  const endDateUTC = new Date(localEndDate).toISOString();
 
-  switch (timePeriod) {
-    case "today":
-      startDate = new Date(now);
-      startDate.setHours(0, 0, 0, 0);
-      isHourly = true;
-      break;
-    case "7days":
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 7);
-      startDate.setHours(0, 0, 0, 0);
-      break;
-    case "30days":
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 30);
-      startDate.setHours(0, 0, 0, 0);
-      break;
-    case "3months":
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 90);
-      startDate.setHours(0, 0, 0, 0);
-      break;
-    case "alltime":
-      // For all time, we'll fetch all data (no start date filter)
-      startDate = null;
-      break;
-    default:
-      startDate = new Date(now);
-      startDate.setHours(0, 0, 0, 0);
-      isHourly = true;
-  }
+  // Determine granularity based on time period
+  const isHourly = timePeriod === "today";
+
+  // Parse local dates for processing logic
+  const localStart = localStartDate ? new Date(localStartDate) : null;
+  const localEnd = new Date(localEndDate);
 
   // Fetch visits data
   const visitsQuery = supabase
@@ -79,9 +62,10 @@ export async function getUrlAnalytics(id: string, timePeriod: string) {
     .select("datetime, visits")
     .eq("url_id", urlId);
 
-  if (startDate) {
-    visitsQuery.gte("datetime", startDate.toISOString());
+  if (startDateUTC) {
+    visitsQuery.gte("datetime", startDateUTC);
   }
+  visitsQuery.lte("datetime", endDateUTC);
 
   const { data: visitsData, error: visitsError } = await visitsQuery.order(
     "datetime",
@@ -98,9 +82,10 @@ export async function getUrlAnalytics(id: string, timePeriod: string) {
     .select("first_visit_at")
     .eq("url_id", urlId);
 
-  if (startDate) {
-    uniqueVisitorsQuery.gte("first_visit_at", startDate.toISOString());
+  if (startDateUTC) {
+    uniqueVisitorsQuery.gte("first_visit_at", startDateUTC);
   }
+  uniqueVisitorsQuery.lte("first_visit_at", endDateUTC);
 
   const { data: uniqueVisitorsData, error: uniqueVisitorsError } =
     await uniqueVisitorsQuery;
@@ -117,26 +102,36 @@ export async function getUrlAnalytics(id: string, timePeriod: string) {
       { visits: number; unique_visitors: number }
     > = {};
 
-    // Initialize all 24 hours with zero values
-    for (let hour = 0; hour < 24; hour++) {
-      const hourKey = `${now.getFullYear()}-${String(
-        now.getMonth() + 1
-      ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(
-        hour
-      ).padStart(2, "0")}:00:00`;
-      hourlyData[hourKey] = { visits: 0, unique_visitors: 0 };
-    }
-
-    // Aggregate visits by hour
-    visitsData.forEach((metric) => {
-      const metricDate = new Date(metric.datetime);
-      if (metricDate.toDateString() === now.toDateString()) {
-        const hourKey = `${metricDate.getFullYear()}-${String(
-          metricDate.getMonth() + 1
-        ).padStart(2, "0")}-${String(metricDate.getDate()).padStart(
+    // Initialize all 24 hours with zero values for the local date
+    if (localStart) {
+      for (let hour = 0; hour < 24; hour++) {
+        const hourKey = `${localStart.getFullYear()}-${String(
+          localStart.getMonth() + 1
+        ).padStart(2, "0")}-${String(localStart.getDate()).padStart(
           2,
           "0"
-        )}T${String(metricDate.getHours()).padStart(2, "0")}:00:00`;
+        )}T${String(hour).padStart(2, "0")}:00:00`;
+        hourlyData[hourKey] = { visits: 0, unique_visitors: 0 };
+      }
+    }
+
+    // Aggregate visits by hour (convert UTC data back to local timezone for grouping)
+    visitsData.forEach((metric) => {
+      const metricDate = new Date(metric.datetime); // UTC date from DB
+      const localMetricDate = new Date(
+        metricDate.toLocaleString("en-US", { timeZone: timezone })
+      );
+
+      if (
+        localStart &&
+        localMetricDate.toDateString() === localStart.toDateString()
+      ) {
+        const hourKey = `${localStart.getFullYear()}-${String(
+          localStart.getMonth() + 1
+        ).padStart(2, "0")}-${String(localStart.getDate()).padStart(
+          2,
+          "0"
+        )}T${String(localMetricDate.getHours()).padStart(2, "0")}:00:00`;
         if (hourlyData[hourKey]) {
           hourlyData[hourKey].visits += metric.visits;
         }
@@ -145,14 +140,21 @@ export async function getUrlAnalytics(id: string, timePeriod: string) {
 
     // Count unique visitors by hour
     uniqueVisitorsData.forEach((visitor) => {
-      const visitorDate = new Date(visitor.first_visit_at);
-      if (visitorDate.toDateString() === now.toDateString()) {
-        const hourKey = `${visitorDate.getFullYear()}-${String(
-          visitorDate.getMonth() + 1
-        ).padStart(2, "0")}-${String(visitorDate.getDate()).padStart(
+      const visitorDate = new Date(visitor.first_visit_at); // UTC date from DB
+      const localVisitorDate = new Date(
+        visitorDate.toLocaleString("en-US", { timeZone: timezone })
+      );
+
+      if (
+        localStart &&
+        localVisitorDate.toDateString() === localStart.toDateString()
+      ) {
+        const hourKey = `${localStart.getFullYear()}-${String(
+          localStart.getMonth() + 1
+        ).padStart(2, "0")}-${String(localStart.getDate()).padStart(
           2,
           "0"
-        )}T${String(visitorDate.getHours()).padStart(2, "0")}:00:00`;
+        )}T${String(localVisitorDate.getHours()).padStart(2, "0")}:00:00`;
         if (hourlyData[hourKey]) {
           hourlyData[hourKey].unique_visitors += 1;
         }
@@ -177,9 +179,9 @@ export async function getUrlAnalytics(id: string, timePeriod: string) {
     > = {};
 
     // Generate all dates in the range (skip for alltime)
-    if (startDate) {
-      const currentDate = new Date(startDate);
-      while (currentDate <= now) {
+    if (localStart) {
+      const currentDate = new Date(localStart);
+      while (currentDate <= localEnd) {
         const dateKey = currentDate.toISOString().split("T")[0];
         dailyData[dateKey] = { visits: 0, unique_visitors: 0 };
         currentDate.setDate(currentDate.getDate() + 1);
@@ -220,7 +222,17 @@ export async function getUrlAnalytics(id: string, timePeriod: string) {
 }
 
 // Get summary statistics with period comparison
-export async function getUrlSummaryStats(id: string, timePeriod: string) {
+export async function getUrlSummaryStats(
+  id: string,
+  localStartDate: string, // ISO string in user's local time
+  localEndDate: string, // ISO string in user's local time
+  timePeriod: string, // "today", "7days" etc for cache keys
+  _timezone: string // user's timezone (unused in summary stats)
+) {
+  // Note: timezone is not used in summary stats since we only do database queries
+  // but kept for API consistency with getUrlAnalytics
+  void _timezone;
+
   const redis = getRedisClient();
   const cacheKey = getCacheKey("summary", id, timePeriod);
 
@@ -238,84 +250,26 @@ export async function getUrlSummaryStats(id: string, timePeriod: string) {
   const supabase = await createClient();
   const urlId = parseInt(id);
 
-  // Calculate date ranges for current and previous periods
-  const now = new Date();
-  let currentStartDate: Date | null;
-  let previousStartDate: Date | null;
-  let previousEndDate: Date | null;
+  // Convert local dates to UTC for database queries
+  const currentStartDateUTC = localStartDate
+    ? new Date(localStartDate).toISOString()
+    : null;
+  const currentEndDateUTC = new Date(localEndDate).toISOString();
 
-  switch (timePeriod) {
-    case "today":
-      // Current: today (00:00 to now)
-      currentStartDate = new Date(now);
-      currentStartDate.setHours(0, 0, 0, 0);
+  // Calculate previous period by going back the same duration
+  let previousStartDateUTC: string | null = null;
+  let previousEndDateUTC: string | null = null;
 
-      // Previous: yesterday (00:00 to 23:59)
-      previousEndDate = new Date(currentStartDate);
-      previousEndDate.setMilliseconds(-1); // End of yesterday
-      previousStartDate = new Date(previousEndDate);
-      previousStartDate.setHours(0, 0, 0, 0);
-      break;
+  if (timePeriod !== "alltime" && localStartDate) {
+    const duration =
+      new Date(localEndDate).getTime() - new Date(localStartDate).getTime();
+    const previousEndDate = new Date(localStartDate); // Previous period ends where current starts
+    const previousStartDate = new Date(
+      new Date(localStartDate).getTime() - duration
+    );
 
-    case "7days":
-      // Current: last 7 days
-      currentStartDate = new Date(now);
-      currentStartDate.setDate(currentStartDate.getDate() - 7);
-      currentStartDate.setHours(0, 0, 0, 0);
-
-      // Previous: 7 days before that (days 8-14 ago)
-      previousEndDate = new Date(currentStartDate);
-      previousEndDate.setMilliseconds(-1);
-      previousStartDate = new Date(previousEndDate);
-      previousStartDate.setDate(previousStartDate.getDate() - 6);
-      previousStartDate.setHours(0, 0, 0, 0);
-      break;
-
-    case "30days":
-      // Current: last 30 days
-      currentStartDate = new Date(now);
-      currentStartDate.setDate(currentStartDate.getDate() - 30);
-      currentStartDate.setHours(0, 0, 0, 0);
-
-      // Previous: 30 days before that (days 31-60 ago)
-      previousEndDate = new Date(currentStartDate);
-      previousEndDate.setMilliseconds(-1);
-      previousStartDate = new Date(previousEndDate);
-      previousStartDate.setDate(previousStartDate.getDate() - 29);
-      previousStartDate.setHours(0, 0, 0, 0);
-      break;
-
-    case "3months":
-      // Current: last 90 days
-      currentStartDate = new Date(now);
-      currentStartDate.setDate(currentStartDate.getDate() - 90);
-      currentStartDate.setHours(0, 0, 0, 0);
-
-      // Previous: 90 days before that (days 91-180 ago)
-      previousEndDate = new Date(currentStartDate);
-      previousEndDate.setMilliseconds(-1);
-      previousStartDate = new Date(previousEndDate);
-      previousStartDate.setDate(previousStartDate.getDate() - 89);
-      previousStartDate.setHours(0, 0, 0, 0);
-      break;
-
-    case "alltime":
-      // For all time, we fetch all data (no comparison needed)
-      currentStartDate = null;
-      // Set previous dates to null - we won't use them for all time
-      previousStartDate = null;
-      previousEndDate = null;
-      break;
-
-    default:
-      // Default to today
-      currentStartDate = new Date(now);
-      currentStartDate.setHours(0, 0, 0, 0);
-
-      previousEndDate = new Date(currentStartDate);
-      previousEndDate.setMilliseconds(-1);
-      previousStartDate = new Date(previousEndDate);
-      previousStartDate.setHours(0, 0, 0, 0);
+    previousStartDateUTC = previousStartDate.toISOString();
+    previousEndDateUTC = previousEndDate.toISOString();
   }
 
   // Fetch current period data
@@ -324,33 +278,30 @@ export async function getUrlSummaryStats(id: string, timePeriod: string) {
     .select("visits")
     .eq("url_id", urlId);
 
-  if (currentStartDate) {
-    currentVisitsQuery.gte("datetime", currentStartDate.toISOString());
+  if (currentStartDateUTC) {
+    currentVisitsQuery.gte("datetime", currentStartDateUTC);
   }
+  currentVisitsQuery.lte("datetime", currentEndDateUTC);
 
   const currentUniqueVisitorsQuery = supabase
     .from("unique_visitor")
     .select("*", { count: "exact", head: true })
     .eq("url_id", urlId);
 
-  if (currentStartDate) {
-    currentUniqueVisitorsQuery.gte(
-      "first_visit_at",
-      currentStartDate.toISOString()
-    );
+  if (currentStartDateUTC) {
+    currentUniqueVisitorsQuery.gte("first_visit_at", currentStartDateUTC);
   }
+  currentUniqueVisitorsQuery.lte("first_visit_at", currentEndDateUTC);
 
   const currentReturningVisitorsQuery = supabase
     .from("unique_visitor")
     .select("first_visit_at, last_visit_at")
     .eq("url_id", urlId);
 
-  if (currentStartDate) {
-    currentReturningVisitorsQuery.gte(
-      "first_visit_at",
-      currentStartDate.toISOString()
-    );
+  if (currentStartDateUTC) {
+    currentReturningVisitorsQuery.gte("first_visit_at", currentStartDateUTC);
   }
+  currentReturningVisitorsQuery.lte("first_visit_at", currentEndDateUTC);
 
   const [
     { data: currentVisitsData, error: currentVisitsError },
@@ -376,7 +327,7 @@ export async function getUrlSummaryStats(id: string, timePeriod: string) {
   let previousUniqueVisitorsError = null;
   let previousReturningVisitorsError = null;
 
-  if (timePeriod !== "alltime" && previousStartDate && previousEndDate) {
+  if (timePeriod !== "alltime" && previousStartDateUTC && previousEndDateUTC) {
     const [
       { data: prevVisitsData, error: prevVisitsError },
       { count: prevUniqueVisitorsCount, error: prevUniqueVisitorsError },
@@ -387,24 +338,24 @@ export async function getUrlSummaryStats(id: string, timePeriod: string) {
         .from("url_metric")
         .select("visits")
         .eq("url_id", urlId)
-        .gte("datetime", previousStartDate.toISOString())
-        .lte("datetime", previousEndDate.toISOString()),
+        .gte("datetime", previousStartDateUTC)
+        .lte("datetime", previousEndDateUTC),
 
       // Previous period unique visitors
       supabase
         .from("unique_visitor")
         .select("*", { count: "exact", head: true })
         .eq("url_id", urlId)
-        .gte("first_visit_at", previousStartDate.toISOString())
-        .lte("first_visit_at", previousEndDate.toISOString()),
+        .gte("first_visit_at", previousStartDateUTC)
+        .lte("first_visit_at", previousEndDateUTC),
 
       // Previous period returning visitors
       supabase
         .from("unique_visitor")
         .select("first_visit_at, last_visit_at")
         .eq("url_id", urlId)
-        .gte("first_visit_at", previousStartDate.toISOString())
-        .lte("first_visit_at", previousEndDate.toISOString()),
+        .gte("first_visit_at", previousStartDateUTC)
+        .lte("first_visit_at", previousEndDateUTC),
     ]);
 
     previousVisitsData = prevVisitsData || [];

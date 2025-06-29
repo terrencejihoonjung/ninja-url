@@ -16,7 +16,6 @@ interface DashboardLayoutProps {
 
 // Inner component that uses the URL context
 function DashboardContent({ children }: DashboardLayoutProps) {
-  console.log("📱 DashboardContent is mounting!");
   const { userUrls, refreshUrls, isRefreshing, user, isLoadingUser } =
     useUrls();
 
@@ -321,7 +320,6 @@ function DashboardContent({ children }: DashboardLayoutProps) {
 
 // Main layout component that provides the URL context
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  console.log("🏠 DashboardLayout is mounting!");
   return (
     <UrlProvider>
       <DashboardContent>{children}</DashboardContent>
