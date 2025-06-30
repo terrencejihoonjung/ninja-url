@@ -120,15 +120,10 @@ function DashboardContent({ children }: DashboardLayoutProps) {
     try {
       const response = await axios.post("/cache/clear");
 
-      const data = response.data;
-
-      toast.success(
-        `Cache cleared successfully for ${data.clearedUrls} URLs!`,
-        {
-          position: "top-center",
-          duration: 3000,
-        }
-      );
+      toast.success(`${response.data.message}`, {
+        position: "top-center",
+        duration: 3000,
+      });
     } catch (error) {
       console.error("Failed to clear cache:", error);
       const errorMessage =

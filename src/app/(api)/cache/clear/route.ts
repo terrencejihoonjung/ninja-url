@@ -42,7 +42,6 @@ export async function POST() {
 
     return NextResponse.json({
       message: "Cache cleared successfully",
-      clearedUrls: urls.length,
     });
   } catch (error) {
     console.error("Cache clearing error:", error);

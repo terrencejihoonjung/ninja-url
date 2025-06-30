@@ -287,10 +287,15 @@ export function ChartAreaInteractive({
               axisLine={false}
               tickMargin={8}
               tickCount={5}
+              allowDecimals={false}
               domain={[0, "dataMax"]}
               tick={{
                 fill: ninjaMode ? "rgba(255, 255, 255, 0.7)" : undefined,
                 fontSize: 12,
+              }}
+              tickFormatter={(value) => {
+                // Ensure we always display integers
+                return Math.floor(Number(value)).toString();
               }}
             />
             <ChartTooltip
