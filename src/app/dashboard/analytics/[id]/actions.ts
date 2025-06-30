@@ -538,6 +538,7 @@ export async function deleteUrl(id: string) {
     .eq("user_id", user.id);
 
   if (error) {
+    console.error(error);
     throw new Error("Failed to delete url");
   }
 
