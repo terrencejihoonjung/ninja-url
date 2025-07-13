@@ -26,9 +26,9 @@ export function getCacheKey(
 export function getCacheTTL(timePeriod: string): number {
   switch (timePeriod) {
     case "today":
-      return 10 * 60; // 10 minutes
+      return 1 * 60; // 1 minute
     case "7days":
-      return 30 * 60; // 30 minutes
+      return 10 * 60; // 10 minute
     case "30days":
       return 2 * 60 * 60; // 2 hours
     case "3months":
