@@ -8,6 +8,9 @@ import { Label } from "@/components/ui/label";
 import { signup, signupWithGoogle } from "@/app/(auth)/signup/actions";
 import { useActionState } from "react";
 import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export function SignupForm({
   className,
@@ -16,6 +19,19 @@ export function SignupForm({
   const [state, formAction] = useActionState(signup, null);
   const searchParams = useSearchParams();
   const prefilledUrl = searchParams.get("url");
+  const router = useRouter();
+
+  // Handle success state
+  useEffect(() => {
+    if (state?.success) {
+      toast.success("Please check your email for a confirmation link.", {
+        position: "top-center",
+      });
+      if (state.redirectUrl) {
+        router.push(state.redirectUrl);
+      }
+    }
+  }, [state, router]);
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>

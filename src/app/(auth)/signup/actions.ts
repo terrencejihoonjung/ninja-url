@@ -6,13 +6,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/supabase-server";
 
 export async function signup(
-  prevState: { error?: string } | null,
+  prevState: { error?: string; success?: boolean; redirectUrl?: string } | null,
   formData: FormData
 ) {
   const supabase = await createClient();
 
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
   const data = {
     email: formData.get("email") as string,
     password: formData.get("password") as string,
@@ -41,11 +39,11 @@ export async function signup(
 
   revalidatePath("/", "layout");
 
-  if (prefilledUrl) {
-    redirect(`/?url=${prefilledUrl}`);
-  }
-
-  redirect("/");
+  // Return success state instead of redirecting
+  return {
+    success: true,
+    redirectUrl: prefilledUrl ? `/?url=${prefilledUrl}` : "/",
+  };
 }
 
 export async function signupWithGoogle() {

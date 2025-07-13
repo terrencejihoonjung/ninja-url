@@ -5,28 +5,28 @@ import { getRedisClient } from "./redis/redis-client";
 export const RATE_LIMITS = {
   // URL creation (most restrictive)
   createUrl: {
-    anonymous: { requests: 5, window: 10 * 60 * 1000 }, // 5 per 10 minutes
-    authenticated: { requests: 20, window: 10 * 60 * 1000 }, // 20 per 10 minutes
+    anonymous: { requests: 5, window: 0.5 * 60 * 1000 }, // 5 per 30 seconds
+    authenticated: { requests: 20, window: 0.5 * 60 * 1000 }, // 20 per 30 seconds
   },
   // URL redirects (most permissive)
   redirect: {
-    anonymous: { requests: 100, window: 60 * 1000 }, // 100 per minute
-    authenticated: { requests: 200, window: 60 * 1000 }, // 200 per minute
+    anonymous: { requests: 100, window: 0.5 * 60 * 1000 }, // 100 per 30 seconds
+    authenticated: { requests: 200, window: 0.5 * 60 * 1000 }, // 200 per 30 seconds
   },
   // Analytics views
   analytics: {
-    anonymous: { requests: 0, window: 60 * 1000 }, // No access for anonymous
-    authenticated: { requests: 50, window: 60 * 1000 }, // 50 per minute
+    anonymous: { requests: 0, window: 0.5 * 60 * 1000 }, // No access for anonymous
+    authenticated: { requests: 50, window: 0.5 * 60 * 1000 }, // 50 per 30 seconds
   },
   // Authentication attempts
   auth: {
-    anonymous: { requests: 10, window: 15 * 60 * 1000 }, // 10 per 15 minutes
-    authenticated: { requests: 10, window: 15 * 60 * 1000 }, // 10 per 15 minutes
+    anonymous: { requests: 10, window: 0.5 * 60 * 1000 }, // 10 per 30 seconds
+    authenticated: { requests: 10, window: 0.5 * 60 * 1000 }, // 10 per 30 seconds
   },
   // General API
   api: {
-    anonymous: { requests: 30, window: 60 * 60 * 1000 }, // 30 per hour
-    authenticated: { requests: 100, window: 60 * 60 * 1000 }, // 100 per hour
+    anonymous: { requests: 30, window: 0.5 * 60 * 1000 }, // 30 per 30 seconds
+    authenticated: { requests: 100, window: 0.5 * 60 * 1000 }, // 100 per 30 seconds
   },
 } as const;
 
