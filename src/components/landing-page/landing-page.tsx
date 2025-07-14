@@ -143,6 +143,90 @@ export function LandingPage() {
           )}
         </div>
       </div>
+
+      {/* Features Section */}
+      <div className="relative z-10 bg-black/40 backdrop-blur-sm px-4 sm:px-6 md:px-8 py-16 sm:py-20 md:py-24">
+        <div className="max-w-7xl mx-auto">
+          {/* Section Header */}
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
+              Essential tools for your
+              <br />
+              <span className="text-orange-400">URL management</span>
+            </h2>
+            <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto">
+              Unlock your productivity potential with ninja-url&apos;s powerful
+              suite of tools designed to streamline your link management
+            </p>
+          </div>
+
+          {/* Bento Box Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-auto lg:h-[600px]">
+            {/* Left Column - URL List */}
+            <div className="bg-black/20 backdrop-blur-md rounded-3xl border border-white/10 p-8 flex flex-col overflow-hidden">
+              <div className="mb-6">
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">
+                  Simple Yet Effective Management
+                </h3>
+                <p className="text-gray-300 text-sm sm:text-base">
+                  Manage all your shortened URLs in one place. View, organize,
+                  and track your links with our intuitive dashboard interface.
+                </p>
+              </div>
+              <div className="flex-1 relative overflow-hidden rounded-xl">
+                <img
+                  src="/url-list.png"
+                  alt="URL List Dashboard"
+                  className="w-full h-full object-cover object-top"
+                />
+              </div>
+            </div>
+
+            {/* Right Column - Stacked */}
+            <div className="flex flex-col gap-6">
+              {/* Top Right - Key Metrics */}
+              <div className="bg-black/20 backdrop-blur-md rounded-3xl border border-white/10 p-8 flex-1 min-h-[280px]">
+                <div className="mb-6">
+                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">
+                    Only What You Need
+                  </h3>
+                  <p className="text-gray-300 text-sm sm:text-base">
+                    Track clicks, visitor metrics, and performance data for all
+                    your shortened URLs in real-time.
+                  </p>
+                </div>
+                <div className="relative overflow-hidden rounded-xl h-32 sm:h-40">
+                  <img
+                    src="/key-metrics.png"
+                    alt="Key Metrics Dashboard"
+                    className="w-full h-full object-cover object-left"
+                  />
+                </div>
+              </div>
+
+              {/* Bottom Right - Graph */}
+              <div className="bg-black/20 backdrop-blur-md rounded-3xl border border-white/10 p-8 flex-1 min-h-[280px]">
+                <div className="mb-6">
+                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">
+                    Advanced Insights
+                  </h3>
+                  <p className="text-gray-300 text-sm sm:text-base">
+                    Dive deep into your link performance with detailed graphs
+                    and analytics. Understand your audience better than ever.
+                  </p>
+                </div>
+                <div className="relative overflow-hidden rounded-xl h-32 sm:h-40">
+                  <img
+                    src="/graph.png"
+                    alt="Analytics Graph"
+                    className="w-full h-full object-cover object-all"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
